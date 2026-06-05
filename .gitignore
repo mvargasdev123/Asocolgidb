@@ -1,1 +1,14 @@
+# Archivo temporal
 *plan.txt
+
+# Base de datos
+*.db
+asociacion_pobre.db
+
+# Entorno Virtual
+.venv/
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
