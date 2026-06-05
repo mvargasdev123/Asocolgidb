@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from database import create_db_and_tables, engine
+from database import create_db_and_tables, engine, inicializar_estados_base
 
 # ¡IMPORTANTE! Tienes que importar TODOS los modelos aquí antes de llamar a create_db_and_tables()
 # Si no lo haces, SQLModel no sabrá que existen y no creará las tablas.
@@ -24,6 +24,9 @@ app = FastAPI(title="API Asociación ASOCOLGI")
 def on_startup():
     print("Iniciando la creación de la base de datos...")
     create_db_and_tables()
+
+    print("Sembrando datos maestros...")
+    inicializar_estados_base() # Llamamos al sembrador mágico
 
 # ENCHUFAMOS LAS RUTAS A LA APLICACIÓN PRINCIPAL
 app.include_router(rutas_persona.router)

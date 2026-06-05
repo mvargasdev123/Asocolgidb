@@ -45,3 +45,17 @@ class ServicioPersona:
         # 5. Crear el registro en la tabla datos_voluntario.
         # 6. Guardar cambios.
         pass
+
+    def obtener_todas_las_personas(self) -> list[Persona]:
+        """
+        Pide al repositorio la lista completa de personas.
+        Por ahora no tenemos filtros, así que devolverá todo el batallón.
+        """
+        return self.repo.obtener_todas()
+
+    def obtener_persona_por_id(self, id_persona: int) -> Persona | None:
+        """
+        Busca a una persona en específico. 
+        Puede devolver la Persona, o un triste 'None' si no existe.
+        """
+        return self.repo.obtener_por_id(id_persona)
