@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
 
 # El nombre de tu archivo de fideos instantáneos
-sqlite_file_name = "asociacion_pobre.db"
+sqlite_file_name = "Asocolgi.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 # El parámetro connect_args es un truco vital de SQLite con FastAPI.

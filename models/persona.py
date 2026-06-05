@@ -15,7 +15,7 @@ class Persona(SQLModel, table=True):
     # Siempre asume lo peor del usuario.
     proteccion_datos: bool = Field(default=False) 
     
-    imagen: bool = Field(default=None) # Aquí guardaremos la URL o ruta de la imagen, no la imagen en sí
+    imagen: bool = Field(default=False) # Aquí guardaremos la URL o ruta de la imagen, no la imagen en sí
     fecha_ingreso: date
     
     # --- Llaves Foráneas (El techo sin paredes) ---
