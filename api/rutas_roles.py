@@ -3,7 +3,7 @@ from sqlmodel import Session
 
 # Importamos nuestras herramientas habituales
 from database import get_session
-from schemas.roles_schema import VoluntarioCreate
+from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, ContratadoCreate
 from services.servicio_roles import ServicioRoles
 
 # Creamos el enrutador específico para las operaciones de roles
@@ -24,3 +24,21 @@ def ascender_persona_a_voluntario(
     resultado = servicio.ascender_a_voluntario(id_persona, datos_entrada)
     
     return resultado
+
+@router.post("/ascender/asociado/{id_persona}")
+def ascender_persona_a_asociado(
+    datos_entrada: AsociadoCreate,
+    id_persona: int = Path(..., description="ID del registro en Asocolgi"), 
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioRoles(session)
+    return servicio.ascender_a_asociado(id_persona, datos_entrada)
+
+@router.post("/ascender/contratado/{id_persona}")
+def ascender_persona_a_contratado(
+    datos_entrada: ContratadoCreate,
+    id_persona: int = Path(..., description="ID del registro en Asocolgi"), 
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioRoles(session)
+    return servicio.ascender_a_contratado(id_persona, datos_entrada)

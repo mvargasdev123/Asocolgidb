@@ -2,7 +2,8 @@ from sqlmodel import Session, select
 from models.estado import Estado
 from models.persona_estado import PersonaEstado
 from models.datos_voluntario import DatosVoluntario
-# Aquí importaremos DatosAsociado y DatosContratado en el futuro
+from models.datos_asociado import DatosAsociado
+from models.datos_contratado import DatosContratado
 
 class RepositorioRoles:
     def __init__(self, session: Session):
@@ -39,3 +40,11 @@ class RepositorioRoles:
         """Guarda la ficha técnica del voluntario"""
         self.session.add(datos_voluntario)
         # El Servicio hará el commit general.
+
+    def crear_registro_asociado(self, datos_asociado: DatosAsociado):
+        """Guarda la ficha técnica del asociado"""
+        self.session.add(datos_asociado)
+
+    def crear_registro_contratado(self, datos_contratado: DatosContratado):
+        """Guarda la ficha técnica del contratado"""
+        self.session.add(datos_contratado)

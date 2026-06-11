@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import date
+from typing import Optional
 
 class VoluntarioCreate(BaseModel):
     # Usamos Field de Pydantic para poner reglas estrictas.
@@ -11,3 +12,14 @@ class VoluntarioCreate(BaseModel):
     horas_disponibles: int = Field(..., gt=0) 
     
     fecha_inicio: date
+
+class AsociadoCreate(BaseModel):
+
+    fecha_inicio: date
+    tramites: str = Field(..., min_length=3, max_length=150)
+
+class ContratadoCreate(BaseModel):
+    funcion: str = Field(..., min_length=3, max_length=150)
+    horas_contratadas: int = Field(..., gt=0)
+    fecha_inicio: date
+    fecha_termino: Optional[date] = None

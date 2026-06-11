@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path, HTTPException
 from sqlmodel import Session
-from fastapi import HTTPException
 
 # Importamos nuestras herramientas
 from database import get_session
-from schemas.persona_schema import PersonaCreate, PersonaRead
+from schemas.persona_schema import PersonaCreate, PersonaRead, PersonaUpdate
 from services.servicio_persona import ServicioPersona
 
 # Creamos un "mini-FastAPI" solo para las rutas de las personas
@@ -41,3 +40,20 @@ def obtener_persona(id_persona: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Ese registro no existe en Asocolgi. Revisa el ID.")
     
     return persona
+
+@router.patch("/{id_persona}", response_model=PersonaRead)
+def actualizar_persona(
+    datos_entrada: PersonaUpdate,
+    id_persona: int = Path(..., description="ID del registro a modificar"),
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioPersona(session)
+    return servicio.actualizar_datos_biograficos(id_persona, datos_entrada)
+
+@router.delete("/{id_persona}")
+def eliminar_persona(
+    id_persona: int = Path(..., description="ID del registro a desactivar"),
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioPersona(session)
+    return servicio.dar_de_baja_persona(id_persona)

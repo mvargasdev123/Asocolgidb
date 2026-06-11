@@ -31,3 +31,4 @@ class Persona(SQLModel, table=True):
     tipo_documento: Optional["TipoDocumento"] = Relationship()
 
     estados: List["Estado"] = Relationship(link_model=PersonaEstado)
+    activo: bool = Field(default=True)

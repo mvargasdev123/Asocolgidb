@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import date
 
@@ -27,6 +27,16 @@ class PersonaCreate(BaseModel):
     id_tipo_documento: Optional[int] = None
     id_nacionalidad: Optional[int] = None
 
+class PersonaUpdate(BaseModel):
+    # Todo es opcional, así el frontend solo manda lo que quiere cambiar
+    nombre: Optional[str] = Field(default=None, max_length=150)
+    correo: Optional[EmailStr] = None
+    fecha_nacimiento: Optional[date] = None
+    direccion: Optional[str] = None
+    proteccion_datos: Optional[bool] = None
+    id_tipo_documento: Optional[int] = None
+    id_nacionalidad: Optional[int] = None
+
 
 # Esquema para DEVOLVER datos (Leer una Persona)
 # Aquí sí incluimos el 'id' y la 'fecha_ingreso', porque ya existen en la base de datos.
@@ -37,6 +47,7 @@ class PersonaRead(BaseModel):
     fecha_nacimiento: date
     fecha_ingreso: date
     proteccion_datos: bool
+    activo: bool
     # Podemos omitir datos que no queramos que el frontend vea por defecto
 
 # En lugar de mostrar el ID foráneo feo, anidamos los esquemas completos.

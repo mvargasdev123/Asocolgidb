@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from repositories.repositorio_persona import RepositorioPersona
 from repositories.repositorio_roles import RepositorioRoles
 # IMPORTACIONES DE SCHEMAS
-from schemas.persona_schema import PersonaCreate
+from schemas.persona_schema import PersonaCreate, PersonaUpdate
 # IMPORTACIONES DE MODELS
 from models.persona import Persona
 
@@ -99,3 +99,40 @@ class ServicioPersona:
         Puede devolver la Persona, o un triste 'None' si no existe.
         """
         return self.repo.obtener_por_id(id_persona)
+    
+    def actualizar_datos_biograficos(self, id_persona: int, datos: PersonaUpdate) -> Persona:
+        # 1. Buscamos a la víctima
+        persona_db = self.repo.obtener_por_id(id_persona)
+        if not persona_db:
+            raise HTTPException(status_code=404, detail="Persona no encontrada.")
+
+        # 2. LA MAGIA: Esto extrae como diccionario SOLO los datos que el frontend envió expresamente
+        datos_diccionario = datos.model_dump(exclude_unset=True)
+        
+        # 3. Iteramos sobre los datos enviados y actualizamos el objeto de la base de datos
+        for clave, valor in datos_diccionario.items():
+            setattr(persona_db, clave, valor)
+            
+        # 4. Guardamos los cambios
+        self.session.add(persona_db)
+        self.session.commit()
+        self.session.refresh(persona_db)
+        
+        return persona_db
+
+    def dar_de_baja_persona(self, id_persona: int):
+        persona_db = self.repo.obtener_por_id(id_persona)
+        if not persona_db:
+            raise HTTPException(status_code=404, detail="Persona no encontrada.")
+            
+        if not persona_db.activo:
+            raise HTTPException(status_code=400, detail="Esta persona ya fue dada de baja anteriormente.")
+
+        # El Soft Delete: Simplemente le apagamos el interruptor
+        persona_db.activo = False
+        
+        self.session.add(persona_db)
+        self.session.commit()
+        self.session.refresh(persona_db)
+        
+        return {"mensaje": f"El registro de {persona_db.nombre} ha sido desactivado exitosamente."}
