@@ -1,7 +1,9 @@
-from typing import Optional
+# IMPORTAMOS HERRAMIENTAS
+from typing import Optional, List
 from datetime import date
 from sqlmodel import Field, SQLModel, Relationship
-
+# IMPORTAMOS MODELS
+from models.persona_estado import PersonaEstado
 from models.nacionalidad import Nacionalidad
 from models.tipo_documento import TipoDocumento
 
@@ -27,3 +29,5 @@ class Persona(SQLModel, table=True):
     # para evitar un error mortal de Python llamado "Importación Circular".
     nacionalidad: Optional["Nacionalidad"] = Relationship()
     tipo_documento: Optional["TipoDocumento"] = Relationship()
+
+    estados: List["Estado"] = Relationship(link_model=PersonaEstado)

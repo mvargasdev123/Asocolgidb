@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 # 1. Definimos cómo se ven los catálogos cuando salen de la API
@@ -10,6 +10,10 @@ class NacionalidadRead(BaseModel):
 class TipoDocumentoRead(BaseModel):
     id: int
     tipo: str
+
+class EstadoRead(BaseModel):
+    id: int
+    nombre_estado: str
 
 # Esquema para RECIBIR datos (Crear una Persona)
 # Fíjate que aquí no pedimos el 'id' ni la 'fecha_ingreso', porque esos los genera el sistema.
@@ -39,3 +43,5 @@ class PersonaRead(BaseModel):
     # Así, el JSON de respuesta tendrá un sub-objeto con los datos reales.
     nacionalidad: Optional[NacionalidadRead] = None
     tipo_documento: Optional[TipoDocumentoRead] = None
+
+    estados: List[EstadoRead] = []
