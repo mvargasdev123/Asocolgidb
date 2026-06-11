@@ -1,3 +1,4 @@
-- sqlite3
-- sqlmodel
-- fastAPI
+fastapi
+sqlmodel
+uvicorn
+email-validator
