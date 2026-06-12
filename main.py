@@ -16,7 +16,7 @@ from models.cita_atencion import CitaAtencion
 
 # IMPORTAMOS NUESTRO ENRUTADOR
 from api import rutas_persona
-from api import rutas_persona, rutas_roles # Añadimos rutas_roles
+from api import rutas_persona, rutas_roles, rutas_citas # Añadimos rutas_roles
 
 app = FastAPI(title="API Asociación ASOCOLGI")
 
@@ -32,6 +32,7 @@ def on_startup():
 # ENCHUFAMOS LAS RUTAS A LA APLICACIÓN PRINCIPAL
 app.include_router(rutas_persona.router)
 app.include_router(rutas_roles.router) # Conectamos los roles
+app.include_router(rutas_citas.router)
 
 @app.get("/")
 def read_root():

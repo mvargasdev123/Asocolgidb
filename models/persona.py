@@ -6,7 +6,8 @@ from sqlmodel import Field, SQLModel, Relationship
 from models.persona_estado import PersonaEstado
 from models.nacionalidad import Nacionalidad
 from models.tipo_documento import TipoDocumento
-
+from models.estado import Estado
+from models.cita_atencion import CitaAtencion
 class Persona(SQLModel, table=True):
     # El ID es opcional al crear el objeto en Python, pero la BD lo llenará al guardar (autoincremental)
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -30,5 +31,6 @@ class Persona(SQLModel, table=True):
     nacionalidad: Optional["Nacionalidad"] = Relationship()
     tipo_documento: Optional["TipoDocumento"] = Relationship()
 
-    estados: List["Estado"] = Relationship(link_model=PersonaEstado)
+    estados: list["Estado"] = Relationship(link_model=PersonaEstado)
     activo: bool = Field(default=True)
+    citas: list["CitaAtencion"] = Relationship(back_populates="persona")

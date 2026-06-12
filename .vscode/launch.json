@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Asocolgi Flutter Web (Chrome - Sin CORS)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/frontend",
+      "args": [
+        "-d",
+        "chrome",
+        "--web-browser-flag=--disable-web-security",
+        "--web-browser-flag=--user-data-dir=/tmp/chrome_dev_test"
+      ]
+    }
+  ]
+}

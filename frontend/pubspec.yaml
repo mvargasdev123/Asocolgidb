@@ -1,0 +1,25 @@
+name: asocolgi_frontend
+description: Frontend para el sistema de gestión de Asocolgi.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.4.9
+  dio: ^5.4.0
+  google_fonts: ^6.1.0
+  go_router: ^12.1.1
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
