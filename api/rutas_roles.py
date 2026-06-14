@@ -5,9 +5,13 @@ from sqlmodel import Session
 from database import get_session
 from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, ContratadoCreate
 from services.servicio_roles import ServicioRoles
+from api.dependencias import obtener_usuario_actual
 
 # Creamos el enrutador específico para las operaciones de roles
-router = APIRouter(prefix="/roles", tags=["Gestión de Roles"])
+router = APIRouter( 
+    prefix="/roles", 
+    tags=["Gestión de Roles"],
+    dependencies=[Depends(obtener_usuario_actual)])
 
 @router.post("/ascender/voluntario/{id_persona}")
 def ascender_persona_a_voluntario(

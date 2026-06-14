@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import date
 from schemas.cita_schema import CitaRead
+from schemas.comentario_schema import ComentarioRead, ComentarioCreate
 
 # 1. Definimos cómo se ven los catálogos cuando salen de la API
 class NacionalidadRead(BaseModel):
@@ -58,3 +59,4 @@ class PersonaRead(BaseModel):
 
     estados: List[EstadoRead] = []
     citas: list[CitaRead] = []
+    comentarios: list[ComentarioRead] = []

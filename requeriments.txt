@@ -1,4 +1,0 @@
-fastapi
-sqlmodel
-uvicorn
-email-validator

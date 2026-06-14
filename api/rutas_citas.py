@@ -5,9 +5,13 @@ from sqlmodel import Session
 from database import get_session
 from schemas.cita_schema import CitaCreate, CitaRead
 from services.servicio_citas import ServicioCitas
+from api.dependencias import obtener_usuario_actual
 
 # Creamos el enrutador
-router = APIRouter(prefix="/citas", tags=["Gestión de Citas"])
+router = APIRouter(
+    prefix="/citas", 
+    tags=["Gestión de Citas"],
+    dependencies=[Depends(obtener_usuario_actual)])
 
 @router.post("/{id_persona}", response_model=CitaRead)
 def registrar_nueva_cita(

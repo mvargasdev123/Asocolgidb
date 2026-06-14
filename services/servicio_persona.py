@@ -86,12 +86,8 @@ class ServicioPersona:
         # 6. Guardar cambios.
         pass
 
-    def obtener_todas_las_personas(self) -> list[Persona]:
-        """
-        Pide al repositorio la lista completa de personas.
-        Por ahora no tenemos filtros, así que devolverá todo el batallón.
-        """
-        return self.repo.obtener_todas()
+    def obtener_todas_las_personas(self, skip: int = 0, limit: int = 100, busqueda_nombre: str = None) -> list[Persona]:
+        return self.repo.obtener_todas(skip=skip, limit=limit)
 
     def obtener_persona_por_id(self, id_persona: int) -> Persona | None:
         """

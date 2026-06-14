@@ -1,14 +1,35 @@
-# Archivo temporal
-*plan.txt
-
-# Base de datos
-*.db
-asociacion_pobre.db
-
-# Entorno Virtual
+# =========================
+# Entornos Virtuales
+# =========================
 .venv/
 venv/
+env/
 
-# Python Cache
+# =========================
+# Basura de Python (Caché)
+# =========================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# =========================
+# Bases de Datos Locales 
+# (SI SUBES ESTO TE QUITO EL TECLADO)
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+asocolgi.db
+
+# =========================
+# Secretos y Variables de Entorno
+# =========================
+.env
+.env.*
+secrets.json
+
+# =========================
+# Basura del Sistema Operativo
+# =========================
+.DS_Store
+Thumbs.db
