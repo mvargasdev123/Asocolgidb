@@ -5,6 +5,7 @@ from sqlmodel import Session
 from database import get_session
 from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, ContratadoCreate
 from services.servicio_roles import ServicioRoles
+from services.servicio_persona import ServicioPersona
 from api.dependencias import obtener_usuario_actual
 
 # Creamos el enrutador específico para las operaciones de roles
@@ -46,3 +47,12 @@ def ascender_persona_a_contratado(
 ):
     servicio = ServicioRoles(session)
     return servicio.ascender_a_contratado(id_persona, datos_entrada)
+
+@router.delete("/{id_persona}/quitar/{nombre_rol}")
+def quitar_rol_de_persona(
+    id_persona: int = Path(..., description="ID de la persona"),
+    nombre_rol: str = Path(..., description="Nombre del rol a quitar (ej. Voluntario, Contratado)"),
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioPersona(session)
+    return servicio.quitar_rol_a_persona(id_persona, nombre_rol)

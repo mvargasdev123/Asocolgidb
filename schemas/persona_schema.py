@@ -26,8 +26,8 @@ class PersonaCreate(BaseModel):
     fecha_nacimiento: date
     direccion: Optional[str] = None
     proteccion_datos: bool = False
-    id_tipo_documento: Optional[int] = None
-    id_nacionalidad: Optional[int] = None
+    tipo_documento: str = Field(..., description="Ej: Cédula, Pasaporte, DNI")
+    nacionalidad: str = Field(..., description="Ej: Colombiano, Argentino, Mexicano")
 
 class PersonaUpdate(BaseModel):
     # Todo es opcional, así el frontend solo manda lo que quiere cambiar
@@ -36,8 +36,8 @@ class PersonaUpdate(BaseModel):
     fecha_nacimiento: Optional[date] = None
     direccion: Optional[str] = None
     proteccion_datos: Optional[bool] = None
-    id_tipo_documento: Optional[int] = None
-    id_nacionalidad: Optional[int] = None
+    tipo_documento: str = Field(..., description="Ej: Cédula, Pasaporte, DNI")
+    nacionalidad: str = Field(..., description="Ej: Colombiano, Argentino, Mexicano")
 
 
 # Esquema para DEVOLVER datos (Leer una Persona)

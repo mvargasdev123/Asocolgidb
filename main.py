@@ -37,8 +37,6 @@ app.add_middleware(
 # Este evento se dispara justo cuando arranca el servidor
 @app.on_event("startup")
 def on_startup():
-    print("Iniciando la creación de la base de datos...")
-    create_db_and_tables()
 
     print("Sembrando datos maestros...")
     inicializar_estados_base() # Llamamos al sembrador mágico
