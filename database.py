@@ -37,7 +37,7 @@ def create_db_and_tables():
 
 def inicializar_estados_base():
     with Session(engine) as session:
-        estados_permitidos = ["Externo", "Voluntario", "Asociado", "Contratado"]
+        estados_permitidos = ["Externo", "Voluntario", "Asociado"]
         
         for nombre in estados_permitidos:
             estado_existente = session.exec(select(Estado).where(Estado.nombre_estado == nombre)).first()

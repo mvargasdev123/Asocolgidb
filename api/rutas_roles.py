@@ -3,56 +3,50 @@ from sqlmodel import Session
 
 # Importamos nuestras herramientas habituales
 from database import get_session
-from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, ContratadoCreate
+from schemas.roles_schema import VoluntarioCreate, AsociadoCreate
 from services.servicio_roles import ServicioRoles
-from services.servicio_persona import ServicioPersona
+# Borré el import de ServicioPersona, ya no lo necesitamos aquí.
 from api.dependencias import obtener_usuario_actual
 
 # Creamos el enrutador específico para las operaciones de roles
 router = APIRouter( 
     prefix="/roles", 
     tags=["Gestión de Roles"],
-    dependencies=[Depends(obtener_usuario_actual)])
+    dependencies=[Depends(obtener_usuario_actual)]
+)
 
-@router.post("/ascender/voluntario/{id_persona}")
+# 1. URL limpia: solo el sustantivo. Pydantic ya valida el id_persona por dentro.
+@router.post("/voluntarios", status_code=201)
 def ascender_persona_a_voluntario(
-    datos_entrada: VoluntarioCreate, # El cuerpo de la petición (JSON)
-    # Validamos que el ID de la URL sea un número entero
-    id_persona: int = Path(..., description="ID del registro en Asocolgi"), 
-    session: Session = Depends(get_session) # Inyectamos la conexión a SQLite
+    datos_entrada: VoluntarioCreate, 
+    session: Session = Depends(get_session) 
 ):
-    # Instanciamos nuestro flamante servicio de roles
     servicio = ServicioRoles(session)
     
-    # Ejecutamos la mutación. Si algo falla (ej. si la persona no existe), 
-    # el servicio lanzará un HTTPException automáticamente.
-    resultado = servicio.ascender_a_voluntario(id_persona, datos_entrada)
+    # Extraemos el id_persona que viene escondido en el JSON validado
+    resultado = servicio.ascender_a_voluntario(datos_entrada.id_persona, datos_entrada)
     
     return resultado
 
-@router.post("/ascender/asociado/{id_persona}")
+# 2. URL limpia para asociados.
+@router.post("/asociados", status_code=201)
 def ascender_persona_a_asociado(
     datos_entrada: AsociadoCreate,
-    id_persona: int = Path(..., description="ID del registro en Asocolgi"), 
     session: Session = Depends(get_session)
 ):
     servicio = ServicioRoles(session)
-    return servicio.ascender_a_asociado(id_persona, datos_entrada)
+    # Pasamos el id_persona extraído del esquema y luego el objeto completo
+    return servicio.ascender_a_asociado(datos_entrada.id_persona, datos_entrada)
 
-@router.post("/ascender/contratado/{id_persona}")
-def ascender_persona_a_contratado(
-    datos_entrada: ContratadoCreate,
-    id_persona: int = Path(..., description="ID del registro en Asocolgi"), 
-    session: Session = Depends(get_session)
-):
-    servicio = ServicioRoles(session)
-    return servicio.ascender_a_contratado(id_persona, datos_entrada)
-
+# 3. El Soft-Delete que arreglamos antes.
 @router.delete("/{id_persona}/quitar/{nombre_rol}")
 def quitar_rol_de_persona(
     id_persona: int = Path(..., description="ID de la persona"),
-    nombre_rol: str = Path(..., description="Nombre del rol a quitar (ej. Voluntario, Contratado)"),
+    nombre_rol: str = Path(..., description="Nombre del rol a quitar (ej. Voluntario, Asociado)"),
     session: Session = Depends(get_session)
 ):
-    servicio = ServicioPersona(session)
-    return servicio.quitar_rol_a_persona(id_persona, nombre_rol)
+    # ¡OJO AL CAMBIO AQUÍ! 
+    # Antes llamabas a ServicioPersona.quitar_rol_a_persona, 
+    # pero toda la lógica pro de "Soft Delete" la metimos en ServicioRoles.remover_rol
+    servicio = ServicioRoles(session)
+    return servicio.remover_rol(id_persona, nombre_rol)

@@ -1,11 +1,11 @@
 from sqlmodel import Session
 from fastapi import HTTPException
+from datetime import date
 from repositories.repositorio_roles import RepositorioRoles
 from repositories.repositorio_persona import RepositorioPersona
 from models.datos_voluntario import DatosVoluntario
-from models.datos_asociado import DatosAsociado
-from models.datos_contratado import DatosContratado
-from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, ContratadoCreate
+from models.datos_asociado import DatosAsociado, EstadoAsociadoEnum
+from schemas.roles_schema import VoluntarioCreate, AsociadoCreate
 
 class ServicioRoles:
     def __init__(self, session: Session):
@@ -44,64 +44,54 @@ class ServicioRoles:
     
     def ascender_a_voluntario(self, id_persona: int, datos: VoluntarioCreate):
         try:
-            # 1. Llamamos a la función genérica
             nombre = self._transicion_estado_base(id_persona, "Voluntario")
             
-            # 2. Hacemos lo específico de este rol
             nuevo_registro = DatosVoluntario(
                 id_persona=id_persona,
+                cargo=datos.cargo,
                 area_voluntariado=datos.area_voluntariado,
                 horas_disponibles=datos.horas_disponibles,
-                fecha_inicio=datos.fecha_inicio
+                carta_compromiso_entregada=datos.carta_compromiso_entregada,
+                formulario_inscripcion_entregado=datos.formulario_inscripcion_entregado,
+                curriculum_url=datos.curriculum_url
             )
-            self.repo_roles.crear_registro_voluntario(nuevo_registro)
             
-            # 3. Confirmamos transacción global
+            # Tu repositorio debe tener esta función (igualita a la de asociado pero con un session.add)
+            self.repo_roles.crear_registro_voluntario(nuevo_registro) 
             self.session.commit()
-            return {"mensaje": f"Éxito: {nombre} ahora es Voluntario en Asocolgi."}
             
-        # Si falló una validación arriba (ej. HTTPException de NotFound), la dejamos pasar
+            return {"mensaje": f"Éxito: {nombre} ha sido condenado a trabajo no remunerado como Voluntario."}
+        
         except HTTPException:
             raise
         except Exception as e:
             self.session.rollback()
-            raise HTTPException(status_code=500, detail=f"Fallo en transacción: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Fallo al guardar voluntario: {str(e)}")
 
     def ascender_a_asociado(self, id_persona: int, datos: AsociadoCreate):
         try:
+            # Tu función mágica que ya pone la etiqueta en la tabla pivote de forma segura
             nombre = self._transicion_estado_base(id_persona, "Asociado")
+            
+            # Inyectamos los NUEVOS campos financieros 
             nuevo_registro = DatosAsociado(
                 id_persona=id_persona,
-                tramites=datos.tramites, # O como lo hayas definido en tu Pydantic
-                fecha_inicio=datos.fecha_inicio
+                numero_registro_asociado=datos.numero_registro_asociado,
+                metodo_pago=datos.metodo_pago,
+                autoriza_whatsapp=datos.autoriza_whatsapp,
+                estado_membresia=datos.estado_membresia,
+                estado_pago=datos.estado_pago
             )
+            
             self.repo_roles.crear_registro_asociado(nuevo_registro)
             self.session.commit()
-            return {"mensaje": f"Éxito: {nombre} ahora es Asociado de Asocolgi."}
+            return {"mensaje": f"Éxito: {nombre} ahora es un honorable Asociado (que paga) en Asocolgi."}
+        
         except HTTPException:
             raise
         except Exception as e:
             self.session.rollback()
-            raise HTTPException(status_code=500, detail=f"Fallo en transacción: {str(e)}")
-
-    def ascender_a_contratado(self, id_persona: int, datos: ContratadoCreate):
-        try:
-            nombre = self._transicion_estado_base(id_persona, "Contratado")
-            nuevo_registro = DatosContratado(
-                id_persona=id_persona,
-                funcion=datos.funcion,
-                horas_contratadas=datos.horas_contratadas,
-                fecha_inicio=datos.fecha_inicio,
-                fecha_termino=datos.fecha_termino # Puede ser None
-            )
-            self.repo_roles.crear_registro_contratado(nuevo_registro)
-            self.session.commit()
-            return {"mensaje": f"Éxito: {nombre} ahora es personal Contratado."}
-        except HTTPException:
-            raise
-        except Exception as e:
-            self.session.rollback()
-            raise HTTPException(status_code=500, detail=f"Fallo en transacción: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Fallo en transacción financiera: {str(e)}")
 
     def remover_rol(self, id_persona: int, nombre_rol_a_quitar: str):
         try:
@@ -113,25 +103,33 @@ class ServicioRoles:
             if not estado_a_quitar:
                 raise HTTPException(status_code=404, detail="El rol especificado no existe.")
 
-            # 1. Verificamos si realmente tiene el rol que queremos quitar
+            # 1. Verificamos si realmente tiene el rol
             if not self.repo_roles.verificar_estado_persona(id_persona, estado_a_quitar.id):
                 raise HTTPException(status_code=400, detail=f"La persona no tiene el rol de {nombre_rol_a_quitar}.")
 
             # 2. Le quitamos la etiqueta en la tabla pivote
             self.repo_roles.remover_estado_en_pivote(id_persona, estado_a_quitar.id)
 
+            # --- LA MAGIA DEL SOFT DELETE (Resolviendo tu #OJO) ---
+            if nombre_rol_a_quitar == "Asociado":
+                # Necesitas que tu repo_roles tenga esta pequeña función para buscar el perfil
+                datos_asoc = self.repo_roles.obtener_datos_asociado_por_persona(id_persona)
+                if datos_asoc:
+                    datos_asoc.estado_membresia = EstadoAsociadoEnum.INACTIVO
+                    datos_asoc.fecha_baja = date.today()
+                    # Nota: SQLAlchemy detecta el cambio en el objeto y lo guarda en el commit final
+            elif nombre_rol_a_quitar == "Voluntario":
+                datos_vol = self.repo_roles.obtener_datos_voluntario_por_persona(id_persona)
+                if datos_vol:
+                    datos_vol.activo = False
+                    datos_vol.fecha_baja = date.today()
+
             # 3. LA REGLA DE ORO: Verificamos si se quedó sin roles
-            # Para esto, refrescamos a la persona (aunque en memoria SQLModel ya debería saberlo)
-            # Si su lista de estados quedó vacía, le devolvemos el estado "Externo"
             roles_restantes = [est for est in persona.estados if est.nombre_estado != nombre_rol_a_quitar]
             
             if len(roles_restantes) == 0:
                 estado_externo = self.repo_roles.obtener_estado_por_nombre("Externo")
                 self.repo_roles.asignar_estado_en_pivote(id_persona, estado_externo.id)
-
-            # OJO: Aquí deberíamos añadir lógica para "cerrar" o "eliminar" 
-            # el registro en la tabla hija (ej. datos_voluntario), pero lo haremos 
-            # más adelante o le pondremos una "fecha_termino".
 
             self.session.commit()
             return {"mensaje": f"Éxito: Se ha removido el rol de {nombre_rol_a_quitar} a {persona.nombre}."}

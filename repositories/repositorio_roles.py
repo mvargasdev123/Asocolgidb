@@ -3,7 +3,6 @@ from models.estado import Estado
 from models.persona_estado import PersonaEstado
 from models.datos_voluntario import DatosVoluntario
 from models.datos_asociado import DatosAsociado
-from models.datos_contratado import DatosContratado
 
 class RepositorioRoles:
     def __init__(self, session: Session):
@@ -36,15 +35,21 @@ class RepositorioRoles:
             self.session.delete(pivote)
             # Igual que arriba, sin commit todavía.
 
-    def crear_registro_voluntario(self, datos_voluntario: DatosVoluntario):
-        """Guarda la ficha técnica del voluntario"""
-        self.session.add(datos_voluntario)
-        # El Servicio hará el commit general.
+    def crear_registro_voluntario(self, registro: DatosVoluntario) -> DatosVoluntario:
+        """Inyecta el nuevo voluntario en la base de datos"""
+        self.session.add(registro)
+        # Nota: El commit lo hacemos en la capa de servicio, así que aquí solo añadimos
+        return registro
 
     def crear_registro_asociado(self, datos_asociado: DatosAsociado):
         """Guarda la ficha técnica del asociado"""
         self.session.add(datos_asociado)
 
-    def crear_registro_contratado(self, datos_contratado: DatosContratado):
-        """Guarda la ficha técnica del contratado"""
-        self.session.add(datos_contratado)
+    def obtener_datos_asociado_por_persona(self, id_persona: int) -> DatosAsociado | None:
+        statement = select(DatosAsociado).where(DatosAsociado.id_persona == id_persona)
+        return self.session.exec(statement).first()
+    
+    def obtener_datos_voluntario_por_persona(self, id_persona: int) -> DatosVoluntario | None:
+        """Busca el contrato de esclavitud (voluntariado) de una persona en la BD"""
+        statement = select(DatosVoluntario).where(DatosVoluntario.id_persona == id_persona)
+        return self.session.exec(statement).first()

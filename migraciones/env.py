@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 # 1. IMPORTACIÓN DE MODELOS
 from sqlmodel import SQLModel
 from models.cita_atencion import CitaAtencion
+from models.expediente import Expediente
 from models.comentario import Comentario
 from models.datos_asociado import DatosAsociado
-from models.datos_contratado import DatosContratado
 from models.datos_voluntario import DatosVoluntario
 from models.estado import Estado
 from models.nacionalidad import Nacionalidad
@@ -18,6 +18,8 @@ from models.persona import Persona
 from models.persona_estado import PersonaEstado
 from models.tipo_documento import TipoDocumento
 from models.usuario import Usuario
+from models.telefono_persona import Telefono
+from models.catalogos import NivelEducativo, MotivoConsulta, Derivacion, TecnicaAcogida
 
 # 2. CARGAR EL .ENV
 load_dotenv()
