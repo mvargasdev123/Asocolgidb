@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from database import create_db_and_tables, engine, inicializar_estados_base, inicializar_super_usuario
-
 # ¡IMPORTANTE! Tienes que importar TODOS los modelos aquí antes de llamar a create_db_and_tables()
 # Si no lo haces, SQLModel no sabrá que existen y no creará las tablas.
 from models.tipo_documento import TipoDocumento
@@ -24,16 +24,29 @@ from models.comentario import Comentario
 # IMPORTAMOS NUESTRO ENRUTADOR
 from api import rutas_persona, rutas_roles, rutas_citas, rutas_auth, rutas_estadisticas, rutas_comentarios, rutas_expedientes# Añadimos rutas_roles
 
+# Este evento se dispara justo cuando arranca el servidor
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Sembrando datos maestros...")
+    inicializar_estados_base() # Llamamos al sembrador mágico
+    inicializar_super_usuario() # Llamamos al super usuario
+    yield
+
 app = FastAPI(title="API Asociación ASOCOLGI", 
             description="Backend de grado empresarial para la gestión de la asociación",
-            version="1.0.0"
+            version="1.0.0",
+            lifespan=lifespan
             )
 
 # --- LA BARRERA DE PROTECCIÓN CORS ---
-# Por ahora, en desarrollo/staging, le permitiremos el acceso a TODO EL MUNDO ("*").
-# Cuando el frontend tenga una URL fija (ej: app.asocolgi.org), reemplazarás el "*" por esa URL.
+# Orígenes específicos porque allow_credentials=True no permite "*"
 origins = [
-    "*",
+    "http://localhost",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://10.0.2.2:8000", # Emulador de Android
+    # Añade aquí la URL de producción de tu frontend de Flutter cuando la tengas
 ]
 
 # Debe ir justo debajo de la creación de 'app' y antes de las rutas
@@ -45,13 +58,6 @@ app.add_middleware(
     allow_headers=["*"],         # Qué cabeceras se permiten (como la de Authorization con el JWT)
 )
 
-# Este evento se dispara justo cuando arranca el servidor
-@app.on_event("startup")
-def on_startup():
-
-    print("Sembrando datos maestros...")
-    inicializar_estados_base() # Llamamos al sembrador mágico
-    inicializar_super_usuario() # Llamamos al super usuario
 
 # ENCHUFAMOS LAS RUTAS A LA APLICACIÓN PRINCIPAL
 app.include_router(rutas_persona.router)

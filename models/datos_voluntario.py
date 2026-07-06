@@ -11,12 +11,14 @@ class DatosVoluntario(SQLModel, table=True):
     
     # Datos específicos del Excel (Hoja VOL)
     cargo: str = Field(max_length=150, description="Ej: Coordinador de Logística")
-    area_voluntariado: str = Field(max_length=150, description="Ej: Eventos, Legal, Redes")
+    campo_accion: str = Field(max_length=150, description="Ej: Legal, Eventos")
+    tipo_voluntariado: Optional[str] = Field(default=None, max_length=100)
     horas_disponibles: int = Field(ge=1, description="Horas a la semana/mes")
     
     # Documentación
     carta_compromiso_entregada: bool = Field(default=False)
     formulario_inscripcion_entregado: bool = Field(default=False)
+    copia_documento_url: Optional[str] = Field(default=None, description="Link a la copia del DNI/Pasaporte")
     curriculum_url: Optional[str] = Field(default=None, description="Link al Drive o S3 con el CV")
     
     # Control de estado (Soft Delete)

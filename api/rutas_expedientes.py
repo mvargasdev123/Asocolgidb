@@ -3,12 +3,13 @@ from sqlmodel import Session
 
 # Ajusta estos imports a cómo se llamen tus archivos y carpetas reales
 from database import get_session # Tu función que genera la sesión de la base de datos
+from api.dependencias import obtener_usuario_actual
 from schemas.expediente_schema import ExpedienteCreate
 from repositories.repositorio_expediente import RepositorioExpediente
 from repositories.repositorio_persona import RepositorioPersona
 from services.servicio_expediente import ServicioExpediente
 
-router = APIRouter(prefix="/expedientes", tags=["Expedientes Legales"])
+router = APIRouter(prefix="/expedientes", tags=["Expedientes Legales"], dependencies=[Depends(obtener_usuario_actual)])
 
 @router.post("/", status_code=201)
 def crear_expediente(expediente_in: ExpedienteCreate, db: Session = Depends(get_session)):

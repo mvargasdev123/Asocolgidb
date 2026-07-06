@@ -26,5 +26,5 @@ class ExpedienteCreate(BaseModel):
 
     class Config:
         # Esto permite que Pydantic entienda los objetos de SQLModel
-        orm_mode = True 
+        from_attributes = True
         # (Si usas Pydantic v2, esto se cambia a from_attributes = True)

@@ -3,6 +3,7 @@ from models.estado import Estado
 from models.persona_estado import PersonaEstado
 from models.datos_voluntario import DatosVoluntario
 from models.datos_asociado import DatosAsociado
+from models.persona import Persona
 
 class RepositorioRoles:
     def __init__(self, session: Session):
@@ -53,3 +54,12 @@ class RepositorioRoles:
         """Busca el contrato de esclavitud (voluntariado) de una persona en la BD"""
         statement = select(DatosVoluntario).where(DatosVoluntario.id_persona == id_persona)
         return self.session.exec(statement).first()
+
+    def obtener_todas_las_personas_voluntarias(self) -> list[Persona]:
+        statement = (
+            select(Persona)
+            .join(PersonaEstado)
+            .join(Estado)
+            .where(Estado.nombre_estado == "Voluntario")
+        )
+        return self.session.exec(statement).all()

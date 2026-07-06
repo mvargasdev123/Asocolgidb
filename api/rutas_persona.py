@@ -30,21 +30,6 @@ def registrar_nueva_persona(
     servicio = ServicioPersona(session)
     return servicio.registrar_nueva_persona(datos_entrada)
 
-@router.post("/", response_model=PersonaRead)
-def crear_nueva_persona(
-    datos_entrada: PersonaCreate, # 1. Recibimos y validamos datos con Pydantic
-    session: Session = Depends(get_session) # 2. FastAPI nos inyecta la BD mágicamente
-):
-    # 3. Instanciamos el servicio (el cerebro) entregándole la sesión
-    servicio = ServicioPersona(session)
-    
-    # 4. Le decimos al servicio que haga su magia con los datos validados
-    persona_creada = servicio.registrar_nueva_persona(datos_entrada)
-    
-    # 5. Devolvemos el resultado. 
-    # FastAPI lo pasará por PersonaRead automáticamente para filtrar datos sensibles.
-    return persona_creada  
-
 @router.get("/", response_model=list[PersonaRead])
 def obtener_todas_las_personas(
     skip: int = Query(default=0, ge=0, description="Paginación: saltar N registros"),

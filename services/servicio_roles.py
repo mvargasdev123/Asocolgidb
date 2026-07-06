@@ -5,7 +5,7 @@ from repositories.repositorio_roles import RepositorioRoles
 from repositories.repositorio_persona import RepositorioPersona
 from models.datos_voluntario import DatosVoluntario
 from models.datos_asociado import DatosAsociado, EstadoAsociadoEnum
-from schemas.roles_schema import VoluntarioCreate, AsociadoCreate
+from schemas.roles_schema import VoluntarioCreate, VoluntarioUpdate, AsociadoCreate
 
 class ServicioRoles:
     def __init__(self, session: Session):
@@ -49,10 +49,12 @@ class ServicioRoles:
             nuevo_registro = DatosVoluntario(
                 id_persona=id_persona,
                 cargo=datos.cargo,
-                area_voluntariado=datos.area_voluntariado,
+                campo_accion=datos.campo_accion,
+                tipo_voluntariado=datos.tipo_voluntariado,
                 horas_disponibles=datos.horas_disponibles,
                 carta_compromiso_entregada=datos.carta_compromiso_entregada,
                 formulario_inscripcion_entregado=datos.formulario_inscripcion_entregado,
+                copia_documento_url=datos.copia_documento_url,
                 curriculum_url=datos.curriculum_url
             )
             
@@ -67,6 +69,28 @@ class ServicioRoles:
         except Exception as e:
             self.session.rollback()
             raise HTTPException(status_code=500, detail=f"Fallo al guardar voluntario: {str(e)}")
+
+    def actualizar_datos_voluntario(self, id_persona: int, datos: VoluntarioUpdate) -> DatosVoluntario:
+        datos_voluntario = self.repo_roles.obtener_datos_voluntario_por_persona(id_persona)
+        if not datos_voluntario:
+            raise HTTPException(status_code=404, detail="La persona no es voluntario o no se encontraron sus datos.")
+            
+        datos_diccionario = datos.model_dump(exclude_unset=True)
+        
+        for clave, valor in datos_diccionario.items():
+            setattr(datos_voluntario, clave, valor)
+            
+        try:
+            self.session.add(datos_voluntario)
+            self.session.commit()
+            self.session.refresh(datos_voluntario)
+            return datos_voluntario
+        except Exception as e:
+            self.session.rollback()
+            raise HTTPException(status_code=500, detail=f"Error al actualizar voluntario: {str(e)}")
+
+    def obtener_todos_los_voluntarios(self):
+        return self.repo_roles.obtener_todas_las_personas_voluntarias()
 
     def ascender_a_asociado(self, id_persona: int, datos: AsociadoCreate):
         try:

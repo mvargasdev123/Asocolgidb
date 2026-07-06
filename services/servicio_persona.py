@@ -15,6 +15,8 @@ from schemas.persona_schema import PersonaCreate, PersonaUpdate
 from models.persona import Persona
 from models.nacionalidad import Nacionalidad
 from models.tipo_documento import TipoDocumento
+from models.catalogos import MotivoConsulta, NivelEducativo, Derivacion, TecnicaAcogida
+from models.telefono_persona import Telefono
 # Asumo que tienes un modelo para los datos específicos del voluntario. 
 # Si se llama distinto, ajusta esta importación:
 from models.datos_voluntario import DatosVoluntario 
@@ -45,6 +47,42 @@ class ServicioPersona:
             self.session.commit()
             self.session.refresh(tipo_doc_db)
         return tipo_doc_db.id
+
+    def _obtener_o_crear_motivo_consulta(self, nombre: str) -> int:
+        motivo_db = self.session.exec(select(MotivoConsulta).where(MotivoConsulta.nombre == nombre)).first()
+        if not motivo_db:
+            motivo_db = MotivoConsulta(nombre=nombre)
+            self.session.add(motivo_db)
+            self.session.commit()
+            self.session.refresh(motivo_db)
+        return motivo_db.id
+
+    def _obtener_o_crear_nivel_educativo(self, nombre: str) -> int:
+        nivel_db = self.session.exec(select(NivelEducativo).where(NivelEducativo.nombre == nombre)).first()
+        if not nivel_db:
+            nivel_db = NivelEducativo(nombre=nombre)
+            self.session.add(nivel_db)
+            self.session.commit()
+            self.session.refresh(nivel_db)
+        return nivel_db.id
+
+    def _obtener_o_crear_derivacion(self, nombre: str) -> int:
+        derivacion_db = self.session.exec(select(Derivacion).where(Derivacion.nombre == nombre)).first()
+        if not derivacion_db:
+            derivacion_db = Derivacion(nombre=nombre)
+            self.session.add(derivacion_db)
+            self.session.commit()
+            self.session.refresh(derivacion_db)
+        return derivacion_db.id
+
+    def _obtener_o_crear_tecnica_acogida(self, nombre: str) -> int:
+        tecnica_db = self.session.exec(select(TecnicaAcogida).where(TecnicaAcogida.nombre == nombre)).first()
+        if not tecnica_db:
+            tecnica_db = TecnicaAcogida(nombre=nombre)
+            self.session.add(tecnica_db)
+            self.session.commit()
+            self.session.refresh(tecnica_db)
+        return tecnica_db.id
     # -----------------------------------------------------------
 
     def registrar_nueva_persona(self, datos: PersonaCreate) -> Persona:
@@ -52,9 +90,15 @@ class ServicioPersona:
             # 1. Usamos la magia para traducir los textos en IDs reales de Postgres
             id_nac = self._obtener_o_crear_nacionalidad(datos.nacionalidad)
             id_doc = self._obtener_o_crear_tipo_documento(datos.tipo_documento)
+            
+            id_motivo = self._obtener_o_crear_motivo_consulta(datos.motivo_consulta) if datos.motivo_consulta else None
+            id_nivel = self._obtener_o_crear_nivel_educativo(datos.nivel_educativo) if datos.nivel_educativo else None
+            id_derivacion = self._obtener_o_crear_derivacion(datos.derivacion) if datos.derivacion else None
+            id_tecnica = self._obtener_o_crear_tecnica_acogida(datos.tecnica_acogida) if datos.tecnica_acogida else None
 
-            # 2. Preparamos el modelo Persona con los IDs obtenidos
+            # 2. Preparamos el modelo Persona INYECTANDO ABSOLUTAMENTE TODO
             nueva_persona = Persona(
+                # Clásicos
                 nombre=datos.nombre,
                 correo=datos.correo,
                 fecha_nacimiento=datos.fecha_nacimiento,
@@ -62,7 +106,29 @@ class ServicioPersona:
                 proteccion_datos=datos.proteccion_datos,
                 id_tipo_documento=id_doc,
                 id_nacionalidad=id_nac,
-                fecha_ingreso=date.today()
+                fecha_ingreso=datos.fecha_atencion if datos.fecha_atencion else date.today(),
+                
+                # Los nuevos campos del Excel mapeados desde Pydantic a SQLModel
+                numero_identificacion=datos.numero_identificacion,
+                genero=datos.genero,
+                situacion_administrativa=datos.situacion_administrativa,
+                madre_soltera=datos.madre_soltera,
+                violencia_genero=datos.violencia_genero,
+                tiene_padron=datos.tiene_padron,
+                autoriza_uso_imagen=datos.autoriza_uso_imagen,
+                codigo_postal=datos.codigo_postal,
+                ciudad_residencia=datos.ciudad_residencia,
+                
+                # Opcionales añadidos del Excel
+                unidad_familiar=datos.unidad_familiar,
+                contacto_emergencia_nombre=datos.contacto_emergencia_nombre,
+                contacto_emergencia_parentesco=datos.contacto_emergencia_parentesco,
+                contacto_emergencia_telefono=datos.contacto_emergencia_telefono,
+                fecha_padron=datos.fecha_padron,
+                id_motivo_consulta=id_motivo,
+                id_nivel_educativo=id_nivel,
+                id_derivacion=id_derivacion,
+                id_tecnica_acogida=id_tecnica
             )
             
             persona_guardada = self.repo.crear_persona(nueva_persona)
@@ -73,19 +139,33 @@ class ServicioPersona:
                 
             self.repo_roles.asignar_estado_en_pivote(persona_guardada.id, estado_externo.id)
             
+            # Registrar telefono si viene
+            if datos.telefono_principal:
+                nuevo_telefono = Telefono(
+                    numero=datos.telefono_principal,
+                    tipo="Principal",
+                    id_persona=persona_guardada.id
+                )
+                self.session.add(nuevo_telefono)
+            
             self.session.commit()
             self.session.refresh(persona_guardada)
             return persona_guardada
-            
         except IntegrityError as e:
             self.session.rollback()
-            if "persona.correo" in str(e):
-                raise HTTPException(status_code=400, detail="El correo electrónico ya se encuentra registrado.")
-            raise HTTPException(status_code=400, detail="Error de integridad en los datos enviados.")
-            
+            # Identificamos si el error es por correo o por numero de identificacion
+            mensaje = str(e.orig)
+            if "correo" in mensaje:
+                detalle = "Ya existe una persona registrada con este correo electrónico."
+            elif "numero_identificacion" in mensaje:
+                detalle = "Ya existe una persona registrada con este número de identificación."
+            else:
+                detalle = "Ya existe un registro con un valor único que intentas duplicar."
+            raise HTTPException(status_code=400, detail=detalle)
         except Exception as e:
             self.session.rollback()
-            raise HTTPException(status_code=500, detail=f"Fallo al registrar la persona: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error al registrar la persona: {str(e)}")
+
 
     def actualizar_datos_biograficos(self, id_persona: int, datos: PersonaUpdate) -> Persona:
         persona_db = self.repo.obtener_por_id(id_persona)
@@ -107,10 +187,24 @@ class ServicioPersona:
         for clave, valor in datos_diccionario.items():
             setattr(persona_db, clave, valor)
             
-        self.session.add(persona_db)
-        self.session.commit()
-        self.session.refresh(persona_db)
-        return persona_db
+        try:
+            self.session.add(persona_db)
+            self.session.commit()
+            self.session.refresh(persona_db)
+            return persona_db
+        except IntegrityError as e:
+            self.session.rollback()
+            mensaje = str(e.orig)
+            if "correo" in mensaje:
+                detalle = "Ya existe otra persona registrada con este correo electrónico."
+            elif "numero_identificacion" in mensaje:
+                detalle = "Ya existe otra persona registrada con este número de identificación."
+            else:
+                detalle = f"Error de unicidad: {mensaje}"
+            raise HTTPException(status_code=400, detail=detalle)
+        except Exception as e:
+            self.session.rollback()
+            raise HTTPException(status_code=500, detail=f"Error al actualizar la persona: {str(e)}")
         
     def ascender_a_voluntario(self, id_persona: int, horas_disponibles: int, area: str):
         """
