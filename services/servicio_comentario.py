@@ -16,7 +16,11 @@ class ServicioComentario:
         if not persona or not persona.activo:
             raise HTTPException(status_code=404, detail="Persona no encontrada o inactiva.")
 
-        nuevo_comentario = Comentario(id_persona=id_persona, texto=datos.texto)
+        nuevo_comentario = Comentario(
+            id_persona=id_persona, 
+            texto=datos.texto,
+            tipo=datos.tipo
+        )
         
         try:
             self.repo_comentario.registrar_comentario(nuevo_comentario)
@@ -26,6 +30,29 @@ class ServicioComentario:
         except Exception as e:
             self.session.rollback()
             raise HTTPException(status_code=500, detail="Fallo al guardar el comentario.")
+
+    def obtener_comentarios_de_persona(self, id_persona: int) -> list[Comentario]:
+        persona = self.repo_persona.obtener_por_id(id_persona)
+        if not persona or not persona.activo:
+            raise HTTPException(status_code=404, detail="Persona no encontrada o inactiva.")
+            
+        return self.repo_comentario.obtener_por_persona(id_persona)
+
+    def actualizar_comentario(self, id_comentario: int, datos: ComentarioUpdate) -> Comentario:
+        comentario = self.repo_comentario.obtener_por_id(id_comentario)
+        if not comentario:
+            raise HTTPException(status_code=404, detail="Comentario no encontrado.")
+            
+        comentario.texto = datos.texto
+        
+        try:
+            self.session.add(comentario)
+            self.session.commit()
+            self.session.refresh(comentario)
+            return comentario
+        except Exception as e:
+            self.session.rollback()
+            raise HTTPException(status_code=500, detail="Fallo al actualizar el comentario.")
 
     def borrar_comentario(self, id_comentario: int):
         comentario = self.repo_comentario.obtener_por_id(id_comentario)

@@ -5,6 +5,14 @@ from datetime import date
 
 # IMPORTACIÓN ESTRICTA: Evita que SQLModel rompa la relación N:M
 from models.persona_estado import PersonaEstado
+from models.nacionalidad import Nacionalidad
+from models.tipo_documento import TipoDocumento
+from models.estado import Estado
+from models.comentario import Comentario
+from models.telefono_persona import Telefono
+from models.expediente import Expediente
+from models.datos_asociado import DatosAsociado
+from models.datos_voluntario import DatosVoluntario
 
 # --- LOS ENUMS ESTRICTOS ---
 class GeneroEnum(str, enum.Enum):

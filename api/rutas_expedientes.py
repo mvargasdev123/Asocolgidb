@@ -2,17 +2,17 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 # Ajusta estos imports a cómo se llamen tus archivos y carpetas reales
-from database import get_session # Tu función que genera la sesión de la base de datos
+from database import get_session
 from api.dependencias import obtener_usuario_actual
-from schemas.expediente_schema import ExpedienteCreate
+from schemas.expediente_schema import ExpedienteCreate, ExpedienteUpdate, ExpedienteRead
 from repositories.repositorio_expediente import RepositorioExpediente
 from repositories.repositorio_persona import RepositorioPersona
 from services.servicio_expediente import ServicioExpediente
 
-router = APIRouter(prefix="/expedientes", tags=["Expedientes Legales"], dependencies=[Depends(obtener_usuario_actual)])
+router = APIRouter(tags=["Expedientes Legales"], dependencies=[Depends(obtener_usuario_actual)])
 
-@router.post("/", status_code=201)
-def crear_expediente(expediente_in: ExpedienteCreate, db: Session = Depends(get_session)):
+@router.post("/personas/{id_persona}/expedientes", response_model=ExpedienteRead, status_code=201)
+def crear_expediente(id_persona: int, expediente_in: ExpedienteCreate, db: Session = Depends(get_session)):
     # 1. Despertamos a los esclavos (Repositorios)
     repo_exp = RepositorioExpediente(db)
     # Nota de la IA: Si aún no tienes RepositorioPersona, tendrás que crear uno simple 
@@ -21,13 +21,32 @@ def crear_expediente(expediente_in: ExpedienteCreate, db: Session = Depends(get_
     
     # 2. Invocamos al cerebro dictatorial (Servicio)
     servicio = ServicioExpediente(repo_exp, repo_per)
-    
-    # 3. Ejecutamos la orden. Si el usuario rompe una regla, 
-    # el servicio lanzará el Error 400 antes de llegar al return.
-    nuevo_expediente = servicio.crear_nuevo_expediente(expediente_in)
-    
-    return {
-        "mensaje": "Expediente creado con éxito", 
-        "id_expediente": nuevo_expediente.id,
-        "numero_registro": nuevo_expediente.numero_registro
-    }
+    return servicio.crear_nuevo_expediente(id_persona, expediente_in)
+
+@router.get("/personas/{id_persona}/expedientes", response_model=list[ExpedienteRead])
+def obtener_expedientes_persona(id_persona: int, db: Session = Depends(get_session)):
+    repo_exp = RepositorioExpediente(db)
+    repo_per = RepositorioPersona(db)
+    servicio = ServicioExpediente(repo_exp, repo_per)
+    return servicio.obtener_expedientes_persona(id_persona)
+
+@router.get("/expedientes/{id_expediente}", response_model=ExpedienteRead)
+def obtener_expediente(id_expediente: int, db: Session = Depends(get_session)):
+    repo_exp = RepositorioExpediente(db)
+    repo_per = RepositorioPersona(db)
+    servicio = ServicioExpediente(repo_exp, repo_per)
+    return servicio.obtener_expediente(id_expediente)
+
+@router.patch("/expedientes/{id_expediente}", response_model=ExpedienteRead)
+def actualizar_expediente(id_expediente: int, expediente_in: ExpedienteUpdate, db: Session = Depends(get_session)):
+    repo_exp = RepositorioExpediente(db)
+    repo_per = RepositorioPersona(db)
+    servicio = ServicioExpediente(repo_exp, repo_per)
+    return servicio.actualizar_expediente(id_expediente, expediente_in)
+
+@router.delete("/expedientes/{id_expediente}")
+def borrar_expediente(id_expediente: int, db: Session = Depends(get_session)):
+    repo_exp = RepositorioExpediente(db)
+    repo_per = RepositorioPersona(db)
+    servicio = ServicioExpediente(repo_exp, repo_per)
+    return servicio.borrar_expediente(id_expediente)

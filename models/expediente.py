@@ -11,6 +11,11 @@ class EstadoExpedienteEnum(str, enum.Enum):
     DENEGADO = "Denegado"
     ARCHIVADO = "Archivado"
 
+class AporteSocialEnum(str, enum.Enum):
+    SI = "Sí"
+    NO = "No"
+    SUBVENCIONADO = "Subvencionado"
+
 # --- EL MODELO EXPEDIENTE ---
 class Expediente(SQLModel, table=True):
     __tablename__ = "expediente"
@@ -29,11 +34,11 @@ class Expediente(SQLModel, table=True):
     # Datos Legales y Extra
     representante_legal: Optional[str] = Field(default=None, max_length=150)
     consultorio_juridico: Optional[str] = Field(default=None, max_length=150)
-    aporte_social: Optional[str] = Field(default=None, max_length=100)
+    aporte_social: Optional[AporteSocialEnum] = Field(default=None)
     
     # Booleanos de control
     solicitante_extranjeria: bool = Field(default=False)
-    antecedentes_traducidos: bool = Field(default=False)
+    antecedentes_traducidos_y_apostillados: bool = Field(default=False)
     
     # Finalización
     fecha_resolucion: Optional[date] = Field(default=None)

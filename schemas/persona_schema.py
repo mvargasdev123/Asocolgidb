@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import date
 from models.persona import GeneroEnum, SituacionAdminEnum, OpcionNAEnum, PadronEnum
 from schemas.comentario_schema import ComentarioRead, ComentarioCreate
+from schemas.expediente_schema import ExpedienteRead
 
 # 1. Definimos cómo se ven los catálogos cuando salen de la API
 class NacionalidadRead(BaseModel):
@@ -125,6 +126,12 @@ class PersonaRead(BaseModel):
     
     # Esto es lo que va a mostrar si es Voluntario, Asociado o Externo
     estados: List[EstadoRead] = Field(default_factory=list, description="Roles actuales de la persona")
+    
+    # Todos sus comentarios anidados para facilitar la lectura en el frontend
+    comentarios: List[ComentarioRead] = Field(default_factory=list, description="Historial de comentarios")
+    
+    # Todos sus expedientes anidados
+    expedientes: List[ExpedienteRead] = Field(default_factory=list, description="Expedientes legales en curso o finalizados")
     
     class Config:
         from_attributes = True

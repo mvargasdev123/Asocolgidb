@@ -1,12 +1,10 @@
 from typing import Optional
 from datetime import date
 from pydantic import BaseModel, Field, constr
-# Nota: Importamos el Enum para que Pydantic valide que manden estados correctos
-from models.expediente import EstadoExpedienteEnum 
+from models.expediente import EstadoExpedienteEnum, AporteSocialEnum
 
 class ExpedienteCreate(BaseModel):
     # Obligatorios (El portero no los deja pasar sin esto)
-    id_persona: int = Field(..., description="ID del Asociado dueño del trámite")
     numero_registro: str = Field(..., min_length=3, max_length=50, description="Ej: EXP-2026-001")
     tipo_tramite: str = Field(..., min_length=3, max_length=150, description="Ej: Renovación NIE")
     fecha_presentacion: date
@@ -18,13 +16,45 @@ class ExpedienteCreate(BaseModel):
     numero_expediente_asignado: Optional[str] = None
     representante_legal: Optional[str] = None
     consultorio_juridico: Optional[str] = None
-    aporte_social: Optional[str] = None
+    aporte_social: Optional[AporteSocialEnum] = None
     
     solicitante_extranjeria: Optional[bool] = False
-    antecedentes_traducidos: Optional[bool] = False
+    antecedentes_traducidos_y_apostillados: Optional[bool] = False
     fecha_resolucion: Optional[date] = None
 
     class Config:
-        # Esto permite que Pydantic entienda los objetos de SQLModel
         from_attributes = True
-        # (Si usas Pydantic v2, esto se cambia a from_attributes = True)
+
+class ExpedienteUpdate(BaseModel):
+    numero_registro: Optional[str] = Field(None, min_length=3, max_length=50)
+    tipo_tramite: Optional[str] = Field(None, min_length=3, max_length=150)
+    fecha_presentacion: Optional[date] = None
+    estado: Optional[EstadoExpedienteEnum] = None
+    numero_expediente_asignado: Optional[str] = None
+    representante_legal: Optional[str] = None
+    consultorio_juridico: Optional[str] = None
+    aporte_social: Optional[AporteSocialEnum] = None
+    solicitante_extranjeria: Optional[bool] = None
+    antecedentes_traducidos_y_apostillados: Optional[bool] = None
+    fecha_resolucion: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+class ExpedienteRead(BaseModel):
+    id: int
+    id_persona: int
+    numero_registro: str
+    numero_expediente_asignado: Optional[str] = None
+    tipo_tramite: str
+    fecha_presentacion: date
+    estado: EstadoExpedienteEnum
+    representante_legal: Optional[str] = None
+    consultorio_juridico: Optional[str] = None
+    aporte_social: Optional[AporteSocialEnum] = None
+    solicitante_extranjeria: bool
+    antecedentes_traducidos_y_apostillados: bool
+    fecha_resolucion: Optional[date] = None
+
+    class Config:
+        from_attributes = True

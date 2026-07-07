@@ -18,4 +18,14 @@ class RepositorioExpediente:
             Expediente.estado == EstadoExpedienteEnum.EN_TRAMITE
         )
         return self.session.exec(statement).first()
-    
+        
+    def obtener_por_id(self, id_expediente: int) -> Expediente | None:
+        return self.session.get(Expediente, id_expediente)
+
+    def obtener_por_persona(self, id_persona: int) -> list[Expediente]:
+        statement = select(Expediente).where(Expediente.id_persona == id_persona).order_by(Expediente.fecha_presentacion.desc())
+        return self.session.exec(statement).all()
+
+    def eliminar(self, expediente: Expediente):
+        self.session.delete(expediente)
+        self.session.commit()
