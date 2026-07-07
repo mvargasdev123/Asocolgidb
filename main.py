@@ -11,7 +11,6 @@ from models.estado import Estado
 from models.persona_estado import PersonaEstado
 from models.datos_voluntario import DatosVoluntario
 from models.datos_asociado import DatosAsociado
-from models.cita_atencion import CitaAtencion
 from models.usuario import Usuario
 from models.telefono_persona import Telefono
 from models.catalogos import NivelEducativo, MotivoConsulta, Derivacion, TecnicaAcogida
@@ -21,8 +20,7 @@ from models.comentario import Comentario
 
 # Importa también los de telefono y comentarios...
 
-# IMPORTAMOS NUESTRO ENRUTADOR
-from api import rutas_persona, rutas_roles, rutas_citas, rutas_auth, rutas_estadisticas, rutas_comentarios, rutas_expedientes# Añadimos rutas_roles
+from api import rutas_persona, rutas_roles, rutas_auth, rutas_estadisticas, rutas_comentarios, rutas_expedientes
 
 # Este evento se dispara justo cuando arranca el servidor
 @asynccontextmanager
@@ -62,7 +60,6 @@ app.add_middleware(
 # ENCHUFAMOS LAS RUTAS A LA APLICACIÓN PRINCIPAL
 app.include_router(rutas_persona.router)
 app.include_router(rutas_roles.router) # Conectamos los roles
-app.include_router(rutas_citas.router)
 app.include_router(rutas_auth.router)
 app.include_router(rutas_estadisticas.router)
 app.include_router(rutas_comentarios.router)

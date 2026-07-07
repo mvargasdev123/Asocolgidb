@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from sqlmodel import Session
 
 # Importamos nuestras herramientas habituales
 from database import get_session
-from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, VoluntarioUpdate, VoluntarioConPersonaRead, VoluntarioRead
+from schemas.roles_schema import VoluntarioCreate, AsociadoCreate, VoluntarioUpdate, VoluntarioConPersonaRead, VoluntarioRead, AsociadoUpdate, AsociadoConPersonaRead, AsociadoRead
 from services.servicio_roles import ServicioRoles
 # Borré el import de ServicioPersona, ya no lo necesitamos aquí.
 from api.dependencias import obtener_usuario_actual
@@ -26,9 +26,13 @@ def ascender_persona_a_voluntario(
     return resultado
 
 @router.get("/voluntarios", response_model=list[VoluntarioConPersonaRead])
-def obtener_voluntarios(session: Session = Depends(get_session)):
+def obtener_voluntarios(
+    skip: int = Query(default=0, ge=0, description="Paginación: saltar N registros"),
+    limit: int = Query(default=50, ge=1, le=1000, description="Paginación: límite máximo"),
+    session: Session = Depends(get_session)
+):
     servicio = ServicioRoles(session)
-    return servicio.obtener_todos_los_voluntarios()
+    return servicio.obtener_todos_los_voluntarios(skip=skip, limit=limit)
 
 @router.patch("/voluntarios/{id_persona}", response_model=VoluntarioRead)
 def actualizar_voluntario(
@@ -40,14 +44,32 @@ def actualizar_voluntario(
     return servicio.actualizar_datos_voluntario(id_persona, datos_entrada)
 
 # 2. URL limpia para asociados.
-@router.post("/asociados", status_code=201)
+@router.post("/asociados/{id_persona}", status_code=201)
 def ascender_persona_a_asociado(
     datos_entrada: AsociadoCreate,
+    id_persona: int = Path(..., description="ID de la persona a ascender"),
     session: Session = Depends(get_session)
 ):
     servicio = ServicioRoles(session)
-    # Pasamos el id_persona extraído del esquema y luego el objeto completo
-    return servicio.ascender_a_asociado(datos_entrada.id_persona, datos_entrada)
+    return servicio.ascender_a_asociado(id_persona, datos_entrada)
+
+@router.get("/asociados", response_model=list[AsociadoConPersonaRead])
+def obtener_asociados(
+    skip: int = Query(default=0, ge=0, description="Paginación: saltar N registros"),
+    limit: int = Query(default=50, ge=1, le=1000, description="Paginación: límite máximo"),
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioRoles(session)
+    return servicio.obtener_todos_los_asociados(skip=skip, limit=limit)
+
+@router.patch("/asociados/{id_persona}", response_model=AsociadoRead)
+def actualizar_asociado(
+    datos_entrada: AsociadoUpdate,
+    id_persona: int = Path(..., description="ID del asociado a modificar"),
+    session: Session = Depends(get_session)
+):
+    servicio = ServicioRoles(session)
+    return servicio.actualizar_datos_asociado(id_persona, datos_entrada)
 
 # 3. El Soft-Delete que arreglamos antes.
 @router.delete("/{id_persona}/quitar/{nombre_rol}")

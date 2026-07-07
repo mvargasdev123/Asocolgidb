@@ -5,7 +5,7 @@ from repositories.repositorio_roles import RepositorioRoles
 from repositories.repositorio_persona import RepositorioPersona
 from models.datos_voluntario import DatosVoluntario
 from models.datos_asociado import DatosAsociado, EstadoAsociadoEnum
-from schemas.roles_schema import VoluntarioCreate, VoluntarioUpdate, AsociadoCreate
+from schemas.roles_schema import VoluntarioCreate, VoluntarioUpdate, AsociadoCreate, AsociadoUpdate
 
 class ServicioRoles:
     def __init__(self, session: Session):
@@ -89,8 +89,8 @@ class ServicioRoles:
             self.session.rollback()
             raise HTTPException(status_code=500, detail=f"Error al actualizar voluntario: {str(e)}")
 
-    def obtener_todos_los_voluntarios(self):
-        return self.repo_roles.obtener_todas_las_personas_voluntarias()
+    def obtener_todos_los_voluntarios(self, skip: int = 0, limit: int = 50):
+        return self.repo_roles.obtener_todas_las_personas_voluntarias(skip=skip, limit=limit)
 
     def ascender_a_asociado(self, id_persona: int, datos: AsociadoCreate):
         try:
@@ -104,7 +104,8 @@ class ServicioRoles:
                 metodo_pago=datos.metodo_pago,
                 autoriza_whatsapp=datos.autoriza_whatsapp,
                 estado_membresia=datos.estado_membresia,
-                estado_pago=datos.estado_pago
+                estado_pago=datos.estado_pago,
+                comentarios=datos.comentarios
             )
             
             self.repo_roles.crear_registro_asociado(nuevo_registro)
@@ -116,6 +117,28 @@ class ServicioRoles:
         except Exception as e:
             self.session.rollback()
             raise HTTPException(status_code=500, detail=f"Fallo en transacción financiera: {str(e)}")
+
+    def actualizar_datos_asociado(self, id_persona: int, datos: AsociadoUpdate) -> DatosAsociado:
+        datos_asociado = self.repo_roles.obtener_datos_asociado_por_persona(id_persona)
+        if not datos_asociado:
+            raise HTTPException(status_code=404, detail="La persona no es asociado o no se encontraron sus datos.")
+            
+        datos_diccionario = datos.model_dump(exclude_unset=True)
+        
+        for clave, valor in datos_diccionario.items():
+            setattr(datos_asociado, clave, valor)
+            
+        try:
+            self.session.add(datos_asociado)
+            self.session.commit()
+            self.session.refresh(datos_asociado)
+            return datos_asociado
+        except Exception as e:
+            self.session.rollback()
+            raise HTTPException(status_code=500, detail=f"Error al actualizar asociado: {str(e)}")
+
+    def obtener_todos_los_asociados(self, skip: int = 0, limit: int = 50):
+        return self.repo_roles.obtener_todas_las_personas_asociadas(skip=skip, limit=limit)
 
     def remover_rol(self, id_persona: int, nombre_rol_a_quitar: str):
         try:

@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import date
 from models.persona import GeneroEnum, SituacionAdminEnum, OpcionNAEnum, PadronEnum
-from schemas.cita_schema import CitaRead
 from schemas.comentario_schema import ComentarioRead, ComentarioCreate
 
 # 1. Definimos cómo se ven los catálogos cuando salen de la API
@@ -123,6 +122,9 @@ class PersonaRead(BaseModel):
     id_motivo_consulta: Optional[int] = None
     id_derivacion: Optional[int] = None
     id_tecnica_acogida: Optional[int] = None
+    
+    # Esto es lo que va a mostrar si es Voluntario, Asociado o Externo
+    estados: List[EstadoRead] = Field(default_factory=list, description="Roles actuales de la persona")
     
     class Config:
         from_attributes = True

@@ -81,7 +81,6 @@ class Persona(SQLModel, table=True):
     # CORREGIDO: link_model ahora usa la clase real importada arriba
     estados: list["Estado"] = Relationship(link_model=PersonaEstado)
     
-    citas: list["CitaAtencion"] = Relationship(back_populates="persona")
     comentarios: list["Comentario"] = Relationship(back_populates="persona")
     telefonos: list["Telefono"] = Relationship(back_populates="persona")
     expedientes: list["Expediente"] = Relationship(back_populates="persona")

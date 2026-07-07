@@ -34,6 +34,7 @@ class DatosAsociado(SQLModel, table=True):
     # La antigüedad se calculará mágicamente usando esta fecha
     fecha_alta: date = Field(default_factory=date.today)
     fecha_baja: Optional[date] = Field(default=None)
+    comentarios: Optional[str] = Field(default=None, description="Resumen del trámite o seguimiento")
     
     # --- RELACIÓN BIDIRECCIONAL 1:1 ---
     persona: Optional["Persona"] = Relationship(back_populates="datos_asociado")

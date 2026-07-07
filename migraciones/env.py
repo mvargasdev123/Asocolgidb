@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 # 1. IMPORTACIÓN DE MODELOS
 from sqlmodel import SQLModel
-from models.cita_atencion import CitaAtencion
 from models.expediente import Expediente
 from models.comentario import Comentario
 from models.datos_asociado import DatosAsociado

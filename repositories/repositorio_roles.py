@@ -55,11 +55,26 @@ class RepositorioRoles:
         statement = select(DatosVoluntario).where(DatosVoluntario.id_persona == id_persona)
         return self.session.exec(statement).first()
 
-    def obtener_todas_las_personas_voluntarias(self) -> list[Persona]:
+    def obtener_todas_las_personas_voluntarias(self, skip: int = 0, limit: int = 50) -> list[Persona]:
         statement = (
             select(Persona)
             .join(PersonaEstado)
             .join(Estado)
             .where(Estado.nombre_estado == "Voluntario")
+            .offset(skip).limit(limit)
+        )
+        return self.session.exec(statement).all()
+
+    def obtener_datos_asociado_por_persona(self, id_persona: int) -> DatosAsociado | None:
+        statement = select(DatosAsociado).where(DatosAsociado.id_persona == id_persona)
+        return self.session.exec(statement).first()
+
+    def obtener_todas_las_personas_asociadas(self, skip: int = 0, limit: int = 50) -> list[Persona]:
+        statement = (
+            select(Persona)
+            .join(PersonaEstado)
+            .join(Estado)
+            .where(Estado.nombre_estado == "Asociado")
+            .offset(skip).limit(limit)
         )
         return self.session.exec(statement).all()

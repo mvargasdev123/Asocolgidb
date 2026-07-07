@@ -33,7 +33,7 @@ def registrar_nueva_persona(
 @router.get("/", response_model=list[PersonaRead])
 def obtener_todas_las_personas(
     skip: int = Query(default=0, ge=0, description="Paginación: saltar N registros"),
-    limit: int = Query(default=100, ge=1, le=1000, description="Paginación: límite máximo"),
+    limit: int = Query(default=50, ge=1, le=1000, description="Paginación: límite máximo"),
     # LA NUEVA LÍNEA: El filtro de búsqueda opcional
     busqueda_nombre: Optional[str] = Query(default=None, description="Buscar por coincidencia parcial de nombre"),
     session: Session = Depends(get_session)

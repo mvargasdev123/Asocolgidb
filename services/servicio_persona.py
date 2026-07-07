@@ -246,8 +246,7 @@ class ServicioPersona:
             self.session.rollback()
             raise HTTPException(status_code=500, detail="Fallo en la base de datos al realizar el ascenso.")
 
-    def obtener_todas_las_personas(self, skip: int = 0, limit: int = 100, busqueda_nombre: str = None) -> list[Persona]:
-        # Arreglé este detalle silenciosamente: le pasamos la búsqueda al repositorio
+    def obtener_todas_las_personas(self, skip: int = 0, limit: int = 50, busqueda_nombre: str = None) -> list[Persona]:
         return self.repo.obtener_todas(skip=skip, limit=limit, busqueda_nombre=busqueda_nombre)
 
     def obtener_persona_por_id(self, id_persona: int) -> Persona | None:

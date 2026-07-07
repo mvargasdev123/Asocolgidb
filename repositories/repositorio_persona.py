@@ -17,7 +17,7 @@ class RepositorioPersona:
         # get() busca directamente por la Llave Primaria. Rápido y limpio.
         return self.session.get(Persona, id_persona)
 
-    def obtener_todas(self, skip: int = 0, limit: int = 100, busqueda_nombre: str = None) -> list[Persona]:
+    def obtener_todas(self, skip: int = 0, limit: int = 50, busqueda_nombre: str = None) -> list[Persona]:
         """
         Trae a las personas activas. 
         skip = Cuántas me salto.
