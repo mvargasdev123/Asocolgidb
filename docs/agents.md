@@ -42,9 +42,9 @@ Para construir cualquier característica (Feature) de forma segura y estructurad
 
 Este proyecto está altamente modularizado. Si te pierdes, esta es la brújula de la carpeta `docs/`:
 
-*   📂 **`docs/specs/`**: (QUÉ vamos a hacer). Contiene los requisitos de negocio exactos (Ej. `01_login.spec.md`, `02_guardado_usuarios.spec.md`).
-*   📂 **`docs/agents/`**: (QUIÉN lo va a hacer). Contiene las personalidades, roles y límites de los programadores virtuales (Ej. `agent_backend.md`, `agent_frontend.md`).
-*   📂 **`docs/skills/`**: (CÓMO lo van a hacer). Contiene los manuales, reglas de oro y buenas prácticas a seguir (Ej. `clean_architecture.md`, `seguridad_supabase.md`).
+*    **`docs/specs/`**: (QUÉ vamos a hacer). Contiene los requisitos de negocio exactos (Ej. `01_login.spec.md`, `02_guardado_usuarios.spec.md`).
+*    **`docs/agents/`**: (QUIÉN lo va a hacer). Contiene las personalidades, roles y límites de los programadores virtuales (Ej. `agent_backend.md`, `agent_frontend.md`).
+*    **`docs/skills/`**: (CÓMO lo van a hacer). Contiene los manuales, reglas de oro y buenas prácticas a seguir (Ej. `clean_architecture.md`, `seguridad_supabase.md`).
 
 ---
 
@@ -97,3 +97,5 @@ Ejecutar estos comandos según el entorno activo para comprobar la salud del pro
   * Tests: `flutter test`
 * **Contenedores:**
   * Al finalizar, el proyecto se levantará usando `docker-compose up --build`.
+
+IMPORTANTE: No implementes oficialmente codigo sin testear todo necesita ser testeado 

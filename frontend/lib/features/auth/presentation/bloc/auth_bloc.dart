@@ -1,13 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../core/network/token_storage.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
+  final TokenStorage _tokenStorage;
 
-  AuthBloc({required AuthRepository authRepository})
+  AuthBloc({
+    required AuthRepository authRepository,
+    required TokenStorage tokenStorage,
+  })
     : _authRepository = authRepository,
+      _tokenStorage = tokenStorage,
       super(const AuthState()) {
     on<LoginRequested>(_onLoginRequested);
     on<ForgotPasswordRequested>(_onForgotPasswordRequested);
@@ -21,6 +27,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
     try {
       final response = await _authRepository.login(event.email, event.password);
+      if (response.accessToken != null) {
+        await _tokenStorage.saveToken(response.accessToken!);
+      }
       emit(state.copyWith(status: AuthStatus.success, response: response));
     } catch (e) {
       emit(

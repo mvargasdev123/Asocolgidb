@@ -5,6 +5,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/glassmorphic_container.dart';
+import '../../../dashboard/presentation/pages/dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,10 +15,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController(
-    text: 'asocolgibasededatos@gmail.com',
-  );
-  final _passwordController = TextEditingController(text: 'test_password_123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -63,7 +62,10 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           } else if (state.status == AuthStatus.success) {
-            // TODO: Navigate to Dashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DashboardPage()),
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Login Exitoso. Redirigiendo...'),
@@ -159,8 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Container(
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: GlassmorphicContainer(
-                          padding: const EdgeInsets.all(40),
-                          height: 500, // Alto fijo para diseño armonioso
+                          padding: const EdgeInsets.all(32),
                           child: Form(
                             key: _formKey,
                             child: Column(

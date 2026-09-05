@@ -1,12 +1,13 @@
 import 'package:dio/dio.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../domain/models/auth_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final Dio _dio;
 
-  // URL base para entorno de desarrollo local (Ajustar para prod)
-  static const String _baseUrl = 'http://localhost:8000';
+  // URL base consumida de la configuración centralizada de DioClient
+  static String get _baseUrl => DioClient.baseUrl;
 
   AuthRepositoryImpl({Dio? dio})
     : _dio = dio ?? Dio(BaseOptions(baseUrl: _baseUrl));
@@ -15,8 +16,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AuthResponse> login(String email, String password) async {
     try {
       final response = await _dio.post(
-        '/login',
-        data: {'email': email, 'password': password},
+        '/auth/login',
+        data: {'username': email, 'password': password},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
       );
 
       if (response.statusCode == 200) {
