@@ -26,18 +26,25 @@ El proyecto está dividido en un Monorepo con la siguiente pila tecnológica:
 
 ---
 
-## 3. Flujo de Trabajo Operativo (Protocolo SDD)
+## 3. Flujo de Trabajo y Ciclo de Vida (El Bucle SDD)
 
-La IA y los desarrolladores deben ejecutar cualquier interacción siguiendo estrictamente este orden:
+Para construir cualquier característica (Feature) de forma segura y estructurada, la interacción con la Inteligencia Artificial debe seguir un ciclo multi-agente. Nunca se debe pedir a una sola IA que haga todo el proyecto al mismo tiempo. El orden exacto es:
 
-1. **Lectura de la petición:** Leer el prompt del usuario. Si hay ambigüedades, hacer preguntas y dar feedback hasta que el requerimiento sea 100% claro.
-2. **Localización y Análisis del Spec:** Dirigirse a `docs/specs/<nombre_feature>.spec.md`. Leer requisitos, contratos y criterios Gherkin. Si hay lagunas lógicas, **detener la ejecución** y solicitar aclaraciones.
-3. **Generación del Plan de Acción:** Crear un checklist (`implementation_plan.md`) desglosando interfaces, lógica, integración y UI.
-4. **Test-Driven Development (TDD):** 
-   * Escribir pruebas que fallen (Red phase) basadas en los Criterios de Aceptación.
-   * Implementar la lógica mínima necesaria (Green phase).
-   * Refactorizar asegurando tipos y limpieza (Refactor phase).
-5. **Verificación Integral:** Ejecutar Linters, Type-Checking y confirmar que la Suite de Tests pasa al 100%.
+1. **Planificación y Arquitectura (`agent_architect`):** Se le pide a la IA que asuma el rol del Arquitecto. Lee la especificación en `docs/specs/`, valida que sea lógicamente posible, y genera un Plan de Implementación paso a paso.
+2. **Desarrollo Backend (`agent_backend`):** Se le pide a la IA que asuma el rol de Backend. Lee el Plan del Arquitecto, aplica la skill de `seguridad_supabase.md`, y programa la base de datos y la API.
+3. **Desarrollo Frontend (`agent_frontend`):** Se le pide a la IA que asuma el rol de Frontend. Lee los Contratos JSON de la Spec y conecta la interfaz usando la skill de `frontend_ui_aesthetics.md`.
+4. **Pruebas y QA (`agent_tester`):** La IA asume el rol de QA. Revisa el código intentando hackearlo o romperlo, asegurando que cumple los criterios "Gherkin" de las Specs.
+5. **Revisión Final:** El código es revisado y se da por terminada la característica.
+
+---
+
+## 3.5 Mapa del Proyecto (Índice Maestro)
+
+Este proyecto está altamente modularizado. Si te pierdes, esta es la brújula de la carpeta `docs/`:
+
+*   📂 **`docs/specs/`**: (QUÉ vamos a hacer). Contiene los requisitos de negocio exactos (Ej. `01_login.spec.md`, `02_guardado_usuarios.spec.md`).
+*   📂 **`docs/agents/`**: (QUIÉN lo va a hacer). Contiene las personalidades, roles y límites de los programadores virtuales (Ej. `agent_backend.md`, `agent_frontend.md`).
+*   📂 **`docs/skills/`**: (CÓMO lo van a hacer). Contiene los manuales, reglas de oro y buenas prácticas a seguir (Ej. `clean_architecture.md`, `seguridad_supabase.md`).
 
 ---
 
