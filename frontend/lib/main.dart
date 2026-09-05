@@ -9,6 +9,8 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/members/data/repositories/member_repository_impl.dart';
 import 'features/members/domain/repositories/member_repository.dart';
+import 'features/members/data/repositories/comentario_repository_impl.dart';
+import 'features/members/domain/repositories/comentario_repository.dart';
 import 'features/members/presentation/bloc/list/members_list_bloc.dart';
 import 'features/members/presentation/bloc/list/members_list_event.dart';
 
@@ -34,6 +36,9 @@ class AsocolgiApp extends StatelessWidget {
         ),
         RepositoryProvider<MemberRepository>(
           create: (context) => MemberRepositoryImpl(dio: context.read<DioClient>().dio),
+        ),
+        RepositoryProvider<ComentarioRepository>(
+          create: (context) => ComentarioRepositoryImpl(dio: context.read<DioClient>().dio),
         ),
       ],
       child: MultiBlocProvider(

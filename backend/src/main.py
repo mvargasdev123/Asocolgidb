@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from api.auth_router import router as auth_router
 from api.persona_router import router as persona_router
+from api.comentario_router import router as comentario_router
 from infrastructure.database import create_db_and_tables
 
 app = FastAPI(
@@ -37,6 +38,7 @@ def on_startup():
 
 app.include_router(auth_router)
 app.include_router(persona_router)
+app.include_router(comentario_router)
 
 @app.get("/")
 def read_root():

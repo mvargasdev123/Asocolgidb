@@ -11,6 +11,7 @@ import '../bloc/list/members_list_bloc.dart';
 import '../bloc/list/members_list_event.dart';
 import 'custom_dropdown_with_other.dart';
 import 'section_header.dart';
+import 'comments_section_widget.dart';
 
 class RegistrationDrawer extends StatelessWidget {
   final int? memberId;
@@ -983,6 +984,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         );
                       },
                     ),
+                    if (widget.memberId != null) ...[
+                      CommentsSectionWidget(idPersona: widget.memberId!),
+                    ],
                     const SizedBox(height: 100),
                   ],
                 ),

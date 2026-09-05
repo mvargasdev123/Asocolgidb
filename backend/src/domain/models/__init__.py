@@ -10,6 +10,7 @@ from .catalogos import (
 from .persona import Persona
 from .roles import DatosAsociado, DatosVoluntario
 from .usuario import Usuario
+from .comentario import Comentario
 
 __all__ = [
     "TipoDocumento",
@@ -23,4 +24,5 @@ __all__ = [
     "DatosAsociado",
     "DatosVoluntario",
     "Usuario",
+    "Comentario",
 ]

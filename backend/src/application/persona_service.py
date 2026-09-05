@@ -18,8 +18,24 @@ class PersonaService:
             return self.repository.get_or_create_catalog(modelo, str(valor).strip())
         return None
 
+    def _obtener_nombre_catalogo(self, modelo, id_val: int | None) -> str | None:
+        if id_val is None:
+            return None
+        item = self.repository.session.get(modelo, id_val)
+        return item.nombre if item else None
+
     def _persona_to_dict(self, persona: Persona) -> dict:
         data = persona.model_dump()
+        
+        # Resolver nombres de texto de los catálogos dinámicos
+        data["tipo_documento"] = self._obtener_nombre_catalogo(TipoDocumento, persona.id_tipo_documento)
+        data["nacionalidad"] = self._obtener_nombre_catalogo(Nacionalidad, persona.id_nacionalidad)
+        data["ciudad"] = self._obtener_nombre_catalogo(Ciudad, persona.id_ciudad)
+        data["nivel_educativo"] = self._obtener_nombre_catalogo(NivelEducativo, persona.id_nivel_educativo)
+        data["motivo_consulta"] = self._obtener_nombre_catalogo(MotivoConsulta, persona.id_motivo_consulta)
+        data["derivacion"] = self._obtener_nombre_catalogo(Derivacion, persona.id_derivacion)
+        data["tecnica_acogida"] = self._obtener_nombre_catalogo(TecnicaAcogida, persona.id_tecnica_acogida)
+
         es_asoc = persona.datos_asociado is not None and persona.datos_asociado.estado_membresia != "Inactivo"
         es_vol = persona.datos_voluntario is not None
         data["es_asociado"] = es_asoc
@@ -29,7 +45,18 @@ class PersonaService:
         return data
 
     def registrar_persona(self, request: PersonaCreateRequest) -> dict:
-        # 1. Validar si ya existe (HTTP 409)
+        # 1. Validar campos obligatorios de creación (Spec 02)
+        if not request.identificacion or not request.identificacion.numero_identificacion or not request.identificacion.numero_identificacion.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El Número de Identificación es obligatorio"
+            )
+        if not request.datos_personales or not request.datos_personales.nombre_completo or not request.datos_personales.nombre_completo.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El Nombre Completo es obligatorio"
+            )
+
         num_identificacion = request.identificacion.numero_identificacion.strip()
         if self.repository.existe_numero_identificacion(num_identificacion):
             raise HTTPException(
@@ -149,18 +176,49 @@ class PersonaService:
                         raise HTTPException(status_code=409, detail="Este Número de Documento ya está asignado a otro usuario")
                     persona.numero_identificacion = num
             
-            if request.identificacion.tipo_documento:
+            if request.identificacion.tipo_documento is not None:
                 persona.id_tipo_documento = self._resolver_catalogo(TipoDocumento, request.identificacion.tipo_documento)
-            if request.identificacion.nacionalidad:
+            if request.identificacion.nacionalidad is not None:
                 persona.id_nacionalidad = self._resolver_catalogo(Nacionalidad, request.identificacion.nacionalidad)
 
         if request.datos_personales:
-            if request.datos_personales.nombre_completo:
-                persona.nombre_completo = request.datos_personales.nombre_completo
-            if request.datos_personales.fecha_nacimiento:
-                persona.fecha_nacimiento = request.datos_personales.fecha_nacimiento
-            if request.datos_personales.ciudad:
-                persona.id_ciudad = self._resolver_catalogo(Ciudad, request.datos_personales.ciudad)
+            dp = request.datos_personales
+            if dp.nombre_completo is not None: persona.nombre_completo = dp.nombre_completo
+            if dp.fecha_nacimiento is not None: persona.fecha_nacimiento = dp.fecha_nacimiento
+            if dp.genero is not None: persona.genero = dp.genero
+            if dp.correo_electronico is not None: persona.correo_electronico = dp.correo_electronico
+            if dp.direccion_residencia is not None: persona.direccion_residencia = dp.direccion_residencia
+            if dp.codigo_postal is not None: persona.codigo_postal = dp.codigo_postal
+            if dp.ciudad is not None:
+                persona.id_ciudad = self._resolver_catalogo(Ciudad, dp.ciudad)
+
+        if request.situacion_social:
+            ss = request.situacion_social
+            if ss.situacion_admin is not None: persona.situacion_admin = ss.situacion_admin
+            if ss.unidad_familiar is not None: persona.unidad_familiar = ss.unidad_familiar
+            if ss.madre_soltera is not None: persona.madre_soltera = ss.madre_soltera
+            if ss.violencia_genero is not None: persona.violencia_genero = ss.violencia_genero
+            if ss.nivel_educativo is not None:
+                persona.id_nivel_educativo = self._resolver_catalogo(NivelEducativo, ss.nivel_educativo)
+
+        if request.legal_acogida:
+            la = request.legal_acogida
+            if la.tiene_padron is not None: persona.tiene_padron = la.tiene_padron
+            if la.fecha_padron is not None: persona.fecha_padron = la.fecha_padron
+            if la.autoriza_datos is not None: persona.autoriza_datos = la.autoriza_datos
+            if la.autoriza_imagen is not None: persona.autoriza_imagen = la.autoriza_imagen
+            if la.motivo_consulta is not None:
+                persona.id_motivo_consulta = self._resolver_catalogo(MotivoConsulta, la.motivo_consulta)
+            if la.derivacion is not None:
+                persona.id_derivacion = self._resolver_catalogo(Derivacion, la.derivacion)
+            if la.tecnica_acogida is not None:
+                persona.id_tecnica_acogida = self._resolver_catalogo(TecnicaAcogida, la.tecnica_acogida)
+
+        if request.contacto_emergencia:
+            ce = request.contacto_emergencia
+            if ce.nombre is not None: persona.contacto_emergencia_nombre = ce.nombre
+            if ce.parentesco is not None: persona.contacto_emergencia_parentesco = ce.parentesco
+            if ce.telefono is not None: persona.contacto_emergencia_telefono = ce.telefono
 
         # Actualización de Roles (Asociado / Voluntario)
         if request.es_asociado is not None:

@@ -1,22 +1,29 @@
-import pytest
-from sqlmodel import SQLModel, Session, create_engine
-from fastapi.testclient import TestClient
-
-# Sobreescribimos la URL para asegurar usar memory DB
 import os
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
+import pytest
+from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel.pool import StaticPool
+from fastapi.testclient import TestClient
+
+from domain.models import *
+import domain.models as models
 from main import app
-from infrastructure.database import engine, get_session
+from infrastructure.database import get_session
 from domain.models.usuario import Usuario
-from application.auth_service import pwd_context
+import bcrypt
+
+test_engine = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 
 @pytest.fixture(name="session")
 def session_fixture():
-    # Reinicia las tablas en cada test
-    SQLModel.metadata.drop_all(engine)
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
+    SQLModel.metadata.drop_all(test_engine)
+    SQLModel.metadata.create_all(test_engine)
+    with Session(test_engine) as session:
         yield session
 
 @pytest.fixture(name="client")
@@ -30,9 +37,10 @@ def client_fixture(session: Session):
 
 @pytest.fixture(name="usuario_prueba")
 def usuario_prueba_fixture(session: Session):
+    hashed = bcrypt.hashpw("password123".encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
     usuario = Usuario(
-        email="admin@test.com",
-        hashed_password=pwd_context.hash("password123"),
+        email="test@asocolgi.org",
+        hashed_password=hashed,
         activo=True,
         es_admin=True
     )

@@ -4,11 +4,11 @@ from pydantic import BaseModel
 
 class IdentificacionSchema(BaseModel):
     tipo_documento: Optional[str] = None
-    numero_identificacion: str
+    numero_identificacion: Optional[str] = None
     nacionalidad: Optional[str] = None
 
 class DatosPersonalesSchema(BaseModel):
-    nombre_completo: str
+    nombre_completo: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
     genero: Optional[str] = None
     correo_electronico: Optional[str] = None

@@ -42,3 +42,4 @@ class Persona(SQLModel, table=True):
 
     datos_asociado: Optional["DatosAsociado"] = Relationship(back_populates="persona")
     datos_voluntario: Optional["DatosVoluntario"] = Relationship(back_populates="persona")
+    comentarios: list["Comentario"] = Relationship(back_populates="persona")
