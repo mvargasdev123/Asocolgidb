@@ -1,0 +1,56 @@
+# ==========================================
+# REGLA DE ORO: SECRETOS Y VARIABLES DE ENTORNO
+# ==========================================
+# Ignorar estrictamente todo archivo .env presente o futuro.
+.env
+.env.*
+!.env.example
+secrets.json
+*.pem
+*.key
+google-services.json
+GoogleService-Info.plist
+
+# ==========================================
+# BACKEND (Python / FastAPI / SQLModel)
+# ==========================================
+backend/.venv/
+backend/venv/
+backend/env/
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Bases de Datos Locales (No subir nunca)
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# FRONTEND (Flutter / Dart)
+# ==========================================
+frontend/.dart_tool/
+frontend/.packages
+frontend/build/
+frontend/.pub-cache/
+frontend/.pub/
+frontend/pubspec.lock
+frontend/**/*.log
+
+# Archivos auto-generados de Flutter/Dart (Opcional, pero recomendado en BLoC/Freezed)
+frontend/**/*.g.dart
+frontend/**/*.freezed.dart
+
+# ==========================================
+# BASURA DEL SISTEMA OPERATIVO Y EXPORTACIONES
+# ==========================================
+.DS_Store
+Thumbs.db
+*.xlsx
+*.csv
+*.log
+.vscode/
+.idea/
