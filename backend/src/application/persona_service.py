@@ -87,6 +87,8 @@ class PersonaService:
             numero_identificacion=num_identificacion,
             nombre_completo=request.datos_personales.nombre_completo,
             fecha_nacimiento=request.datos_personales.fecha_nacimiento,
+            fecha_atencion=request.datos_personales.fecha_atencion,
+            telefono_principal=request.datos_personales.telefono_principal,
             genero=request.datos_personales.genero,
             correo_electronico=request.datos_personales.correo_electronico,
             direccion_residencia=request.datos_personales.direccion_residencia,
@@ -129,7 +131,8 @@ class PersonaService:
                 metodo_pago=request.datos_asociado.metodo_pago,
                 estado_membresia=request.datos_asociado.estado_membresia or "Activo",
                 estado_pago=request.datos_asociado.estado_pago,
-                autoriza_whatsapp=request.datos_asociado.autoriza_whatsapp
+                autoriza_whatsapp=request.datos_asociado.autoriza_whatsapp,
+                fecha_vinculacion=request.datos_asociado.fecha_vinculacion
             )
             
         voluntario = None
@@ -142,6 +145,9 @@ class PersonaService:
                 horas_semana=vd.horas_semana if vd else None,
                 url_doc=vd.url_doc if vd else None,
                 url_cv=vd.url_cv if vd else None,
+                fecha_vinculacion=vd.fecha_vinculacion if vd else None,
+                fecha_alta=vd.fecha_alta if vd else None,
+                fecha_baja=vd.fecha_baja if vd else None,
                 carta_compromiso_firmada=vd.carta_compromiso_firmada if vd else False,
                 formulario_inscripcion=vd.formulario_inscripcion if vd else False,
             )
@@ -151,8 +157,23 @@ class PersonaService:
         
         return self._persona_to_dict(persona_creada)
 
-    def obtener_todas(self, last_id: int | None = None, limit: int = 10) -> list[dict]:
-        personas = self.repository.get_all_activas(last_id=last_id, limit=limit)
+    def obtener_todas(
+        self,
+        last_id: int | None = None,
+        limit: int = 10,
+        search: str | None = None,
+        genero: str | None = None,
+        rol: str | None = None,
+        situacion_admin: str | None = None
+    ) -> list[dict]:
+        personas = self.repository.get_all_activas(
+            last_id=last_id,
+            limit=limit,
+            search=search,
+            genero=genero,
+            rol=rol,
+            situacion_admin=situacion_admin
+        )
         return [self._persona_to_dict(p) for p in personas]
 
     def obtener_por_id(self, persona_id: int) -> Persona:
@@ -185,6 +206,8 @@ class PersonaService:
             dp = request.datos_personales
             if dp.nombre_completo is not None: persona.nombre_completo = dp.nombre_completo
             if dp.fecha_nacimiento is not None: persona.fecha_nacimiento = dp.fecha_nacimiento
+            if dp.fecha_atencion is not None: persona.fecha_atencion = dp.fecha_atencion
+            if dp.telefono_principal is not None: persona.telefono_principal = dp.telefono_principal
             if dp.genero is not None: persona.genero = dp.genero
             if dp.correo_electronico is not None: persona.correo_electronico = dp.correo_electronico
             if dp.direccion_residencia is not None: persona.direccion_residencia = dp.direccion_residencia
@@ -233,6 +256,7 @@ class PersonaService:
                         estado_membresia='Activo',
                         estado_pago=asoc_data.estado_pago if asoc_data else 'Al día',
                         autoriza_whatsapp=asoc_data.autoriza_whatsapp if asoc_data else False,
+                        fecha_vinculacion=asoc_data.fecha_vinculacion if asoc_data else None,
                     )
                 else:
                     persona.datos_asociado.estado_membresia = "Activo"
@@ -242,6 +266,7 @@ class PersonaService:
                         if ad.estado_membresia: persona.datos_asociado.estado_membresia = ad.estado_membresia
                         if ad.estado_pago: persona.datos_asociado.estado_pago = ad.estado_pago
                         if ad.autoriza_whatsapp is not None: persona.datos_asociado.autoriza_whatsapp = ad.autoriza_whatsapp
+                        if ad.fecha_vinculacion is not None: persona.datos_asociado.fecha_vinculacion = ad.fecha_vinculacion
 
         if request.es_voluntario is not None:
             if request.es_voluntario == False and persona.datos_voluntario:
@@ -258,6 +283,9 @@ class PersonaService:
                         horas_semana=vd.horas_semana if vd else None,
                         url_doc=vd.url_doc if vd else None,
                         url_cv=vd.url_cv if vd else None,
+                        fecha_vinculacion=vd.fecha_vinculacion if vd else None,
+                        fecha_alta=vd.fecha_alta if vd else None,
+                        fecha_baja=vd.fecha_baja if vd else None,
                         carta_compromiso_firmada=vd.carta_compromiso_firmada if vd else False,
                         formulario_inscripcion=vd.formulario_inscripcion if vd else False,
                     )
@@ -268,6 +296,9 @@ class PersonaService:
                     if vd.horas_semana is not None: persona.datos_voluntario.horas_semana = vd.horas_semana
                     if vd.url_doc is not None: persona.datos_voluntario.url_doc = vd.url_doc
                     if vd.url_cv is not None: persona.datos_voluntario.url_cv = vd.url_cv
+                    if vd.fecha_vinculacion is not None: persona.datos_voluntario.fecha_vinculacion = vd.fecha_vinculacion
+                    if vd.fecha_alta is not None: persona.datos_voluntario.fecha_alta = vd.fecha_alta
+                    if vd.fecha_baja is not None: persona.datos_voluntario.fecha_baja = vd.fecha_baja
                     if vd.carta_compromiso_firmada is not None: persona.datos_voluntario.carta_compromiso_firmada = vd.carta_compromiso_firmada
                     if vd.formulario_inscripcion is not None: persona.datos_voluntario.formulario_inscripcion = vd.formulario_inscripcion
 

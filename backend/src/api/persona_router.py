@@ -30,10 +30,21 @@ def registrar_nueva_persona(
 def obtener_todas_las_personas(
     last_id: int | None = None,
     limit: int = 10,
+    q: str | None = None,
+    genero: str | None = None,
+    rol: str | None = None,
+    situacion_admin: str | None = None,
     service: PersonaService = Depends(get_persona_service)
 ):
-    """Obtiene el listado de personas activas (Spec 03)"""
-    return service.obtener_todas(last_id=last_id, limit=limit)
+    """Obtiene el listado de personas activas con filtros opcionales (Spec 03)"""
+    return service.obtener_todas(
+        last_id=last_id,
+        limit=limit,
+        search=q,
+        genero=genero,
+        rol=rol,
+        situacion_admin=situacion_admin
+    )
 
 @router.get("/{id_persona}")
 def obtener_persona(

@@ -19,6 +19,8 @@ class Identificacion {
 class DatosPersonales {
   final String nombreCompleto; // Obligatorio
   final String? fechaNacimiento;
+  final String? fechaAtencion;
+  final String? telefonoPrincipal;
   final String? genero;
   final String? correoElectronico;
   final String? direccionResidencia;
@@ -28,6 +30,8 @@ class DatosPersonales {
   DatosPersonales({
     required this.nombreCompleto,
     this.fechaNacimiento,
+    this.fechaAtencion,
+    this.telefonoPrincipal,
     this.genero,
     this.correoElectronico,
     this.direccionResidencia,
@@ -38,6 +42,8 @@ class DatosPersonales {
   Map<String, dynamic> toJson() => {
     'nombre_completo': nombreCompleto,
     'fecha_nacimiento': fechaNacimiento,
+    'fecha_atencion': fechaAtencion,
+    'telefono_principal': telefonoPrincipal,
     'genero': genero,
     'correo_electronico': correoElectronico,
     'direccion_residencia': direccionResidencia,
@@ -119,12 +125,14 @@ class DatosAsociado {
   final String? estadoMembresia;
   final String? estadoPago;
   final bool? autorizaWhatsapp;
+  final String? fechaVinculacion;
 
   DatosAsociado({
     this.metodoPago,
     this.estadoMembresia,
     this.estadoPago,
     this.autorizaWhatsapp,
+    this.fechaVinculacion,
   });
 
   Map<String, dynamic> toJson() => {
@@ -132,6 +140,7 @@ class DatosAsociado {
     'estado_membresia': estadoMembresia,
     'estado_pago': estadoPago,
     'autoriza_whatsapp': autorizaWhatsapp,
+    'fecha_vinculacion': fechaVinculacion,
   };
 }
 
@@ -142,6 +151,7 @@ class DatosVoluntario {
   final int? horasSemana;
   final String? urlDoc; // Opcional
   final String? urlCv; // Opcional
+  final String? fechaVinculacion;
   final bool? cartaCompromisoFirmada;
   final bool? formularioInscripcion;
 
@@ -152,6 +162,7 @@ class DatosVoluntario {
     this.horasSemana,
     this.urlDoc,
     this.urlCv,
+    this.fechaVinculacion,
     this.cartaCompromisoFirmada,
     this.formularioInscripcion,
   });
@@ -163,6 +174,7 @@ class DatosVoluntario {
     'horas_semana': horasSemana,
     'url_doc': urlDoc,
     'url_cv': urlCv,
+    'fecha_vinculacion': fechaVinculacion,
     'carta_compromiso_firmada': cartaCompromisoFirmada,
     'formulario_inscripcion': formularioInscripcion,
   };

@@ -25,10 +25,23 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getMembers({int? lastId, int limit = 10}) async {
+  Future<List<Map<String, dynamic>>> getMembers({
+    int? lastId,
+    int limit = 10,
+    String? query,
+    String? genero,
+    String? rol,
+    String? situacionAdmin,
+  }) async {
     try {
-      final queryParams = {'limit': limit};
+      final queryParams = <String, dynamic>{'limit': limit};
       if (lastId != null) queryParams['last_id'] = lastId;
+      if (query != null && query.trim().isNotEmpty) queryParams['q'] = query.trim();
+      if (genero != null && genero.trim().isNotEmpty) queryParams['genero'] = genero.trim();
+      if (rol != null && rol.trim().isNotEmpty) queryParams['rol'] = rol.trim();
+      if (situacionAdmin != null && situacionAdmin.trim().isNotEmpty) {
+        queryParams['situacion_admin'] = situacionAdmin.trim();
+      }
 
       final response = await _dio.get('/personas/', queryParameters: queryParams);
       if (response.statusCode == 200) {

@@ -10,6 +10,8 @@ class IdentificacionSchema(BaseModel):
 class DatosPersonalesSchema(BaseModel):
     nombre_completo: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
+    fecha_atencion: Optional[date] = None
+    telefono_principal: Optional[str] = None
     genero: Optional[str] = None
     correo_electronico: Optional[str] = None
     direccion_residencia: Optional[str] = None
@@ -42,6 +44,7 @@ class DatosAsociadoSchema(BaseModel):
     estado_membresia: Optional[str] = None
     estado_pago: Optional[str] = None
     autoriza_whatsapp: Optional[bool] = None
+    fecha_vinculacion: Optional[date] = None
 
 class DatosVoluntarioSchema(BaseModel):
     cargo: Optional[str] = None
@@ -50,6 +53,9 @@ class DatosVoluntarioSchema(BaseModel):
     horas_semana: Optional[int] = None
     url_doc: Optional[str] = None
     url_cv: Optional[str] = None
+    fecha_vinculacion: Optional[date] = None
+    fecha_alta: Optional[date] = None
+    fecha_baja: Optional[date] = None
     carta_compromiso_firmada: Optional[bool] = None
     formulario_inscripcion: Optional[bool] = None
 

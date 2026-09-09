@@ -3,7 +3,12 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from api.auth_router import router as auth_router
 from api.persona_router import router as persona_router
+from api.asociado_router import router as asociado_router
+from api.voluntario_router import router as voluntario_router
 from api.comentario_router import router as comentario_router
+from api.expediente_router import router as expediente_router
+from api.metrics_router import router as metrics_router
+from api.excel_router import router as excel_router
 from infrastructure.database import create_db_and_tables
 
 app = FastAPI(
@@ -15,7 +20,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_origin_regex=".*",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,7 +44,12 @@ def on_startup():
 
 app.include_router(auth_router)
 app.include_router(persona_router)
+app.include_router(asociado_router)
+app.include_router(voluntario_router)
 app.include_router(comentario_router)
+app.include_router(expediente_router)
+app.include_router(metrics_router)
+app.include_router(excel_router)
 
 @app.get("/")
 def read_root():

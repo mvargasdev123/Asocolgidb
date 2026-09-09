@@ -39,6 +39,7 @@ dependencies:
   dio: ^5.11.1
   google_fonts: ^8.2.1
   shared_preferences: ^2.5.5
+  file_picker: ^12.2.0
 
 dev_dependencies:
   flutter_test:

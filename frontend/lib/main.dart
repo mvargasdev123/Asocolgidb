@@ -13,6 +13,15 @@ import 'features/members/data/repositories/comentario_repository_impl.dart';
 import 'features/members/domain/repositories/comentario_repository.dart';
 import 'features/members/presentation/bloc/list/members_list_bloc.dart';
 import 'features/members/presentation/bloc/list/members_list_event.dart';
+import 'features/expedientes/data/repositories/expediente_repository_impl.dart';
+import 'features/expedientes/domain/repositories/expediente_repository.dart';
+import 'features/expedientes/presentation/bloc/expedientes_bloc.dart';
+import 'features/dashboard/data/repositories/metrics_repository_impl.dart';
+import 'features/dashboard/domain/repositories/metrics_repository.dart';
+import 'features/dashboard/presentation/bloc/metrics_bloc.dart';
+import 'features/dashboard/data/repositories/excel_repository_impl.dart';
+import 'features/dashboard/domain/repositories/excel_repository.dart';
+import 'features/dashboard/presentation/bloc/excel_bloc.dart';
 
 void main() {
   runApp(const AsocolgiApp());
@@ -40,6 +49,15 @@ class AsocolgiApp extends StatelessWidget {
         RepositoryProvider<ComentarioRepository>(
           create: (context) => ComentarioRepositoryImpl(dio: context.read<DioClient>().dio),
         ),
+        RepositoryProvider<ExpedienteRepository>(
+          create: (context) => ExpedienteRepositoryImpl(context.read<DioClient>()),
+        ),
+        RepositoryProvider<MetricsRepository>(
+          create: (context) => MetricsRepositoryImpl(context.read<DioClient>()),
+        ),
+        RepositoryProvider<ExcelRepository>(
+          create: (context) => ExcelRepositoryImpl(context.read<DioClient>().dio),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -53,6 +71,21 @@ class AsocolgiApp extends StatelessWidget {
             create: (context) => MembersListBloc(
               memberRepository: context.read<MemberRepository>(),
             )..add(LoadInitialMembers()),
+          ),
+          BlocProvider(
+            create: (context) => ExpedientesBloc(
+              repository: context.read<ExpedienteRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => MetricsBloc(
+              repository: context.read<MetricsRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => ExcelBloc(
+              context.read<ExcelRepository>(),
+            ),
           ),
         ],
         child: MaterialApp(

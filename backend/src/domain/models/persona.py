@@ -10,6 +10,8 @@ class Persona(SQLModel, table=True):
     numero_identificacion: str = Field(max_length=50, unique=True, index=True)
     nombre_completo: str = Field(max_length=150)
     fecha_nacimiento: Optional[date] = Field(default=None)
+    fecha_atencion: Optional[date] = Field(default=None)
+    telefono_principal: Optional[str] = Field(default=None, max_length=50)
     genero: Optional[str] = Field(default=None)
     correo_electronico: Optional[str] = Field(default=None)
     direccion_residencia: Optional[str] = Field(default=None)
@@ -43,3 +45,4 @@ class Persona(SQLModel, table=True):
     datos_asociado: Optional["DatosAsociado"] = Relationship(back_populates="persona")
     datos_voluntario: Optional["DatosVoluntario"] = Relationship(back_populates="persona")
     comentarios: list["Comentario"] = Relationship(back_populates="persona")
+    expedientes: list["Expediente"] = Relationship(back_populates="persona")

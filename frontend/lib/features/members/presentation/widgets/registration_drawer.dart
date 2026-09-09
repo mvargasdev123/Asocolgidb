@@ -12,6 +12,7 @@ import '../bloc/list/members_list_event.dart';
 import 'custom_dropdown_with_other.dart';
 import 'section_header.dart';
 import 'comments_section_widget.dart';
+import '../../../expedientes/domain/repositories/expediente_repository.dart';
 
 class RegistrationDrawer extends StatelessWidget {
   final int? memberId;
@@ -46,6 +47,7 @@ class _RegistrationForm extends StatefulWidget {
 class _RegistrationFormState extends State<_RegistrationForm> {
   final _formKey = GlobalKey<FormState>();
   bool _dataLoaded = false;
+  bool _isEditing = false;
 
   // Controladores de Identificación
   String _tipoDoc = 'NIF/NIE';
@@ -55,6 +57,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   // Controladores de Datos Personales
   final _nombreController = TextEditingController();
   final _fechaNacController = TextEditingController();
+  final _fechaAtencionController = TextEditingController();
+  final _telefonoPrincipalController = TextEditingController();
   String _genero = 'M';
   final _correoController = TextEditingController();
   final _dirController = TextEditingController();
@@ -87,6 +91,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   String _estadoMembresia = 'Activo';
   String _estadoPago = 'Al día';
   bool _autorizaWhatsapp = false;
+  final _asoFechaVinculacionCtrl = TextEditingController();
 
   // Voluntario
   final _volCargo = TextEditingController();
@@ -95,8 +100,22 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   final _volHoras = TextEditingController();
   final _volUrlDoc = TextEditingController();
   final _volUrlCv = TextEditingController();
+  final _volFechaVinculacionCtrl = TextEditingController();
   bool _volCarta = false;
   bool _volFormulario = false;
+
+  String _calcularAntiguedad(String fechaVinculacionStr) {
+    if (fechaVinculacionStr.trim().isEmpty) return 'N/A';
+    final parsed = DateTime.tryParse(fechaVinculacionStr.trim());
+    if (parsed == null) return 'N/A';
+    final now = DateTime.now();
+    int years = now.year - parsed.year;
+    if (now.month < parsed.month || (now.month == parsed.month && now.day < parsed.day)) {
+      years--;
+    }
+    if (years < 0) years = 0;
+    return years == 1 ? '1 año' : '$years años';
+  }
 
   void _populateFromData(Map<String, dynamic> data) {
     if (_dataLoaded) return;
@@ -105,6 +124,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       _numIdentController.text = data['numero_identificacion'] ?? '';
       _nombreController.text = data['nombre_completo'] ?? '';
       _fechaNacController.text = data['fecha_nacimiento'] ?? '';
+      _fechaAtencionController.text = data['fecha_atencion'] ?? '';
+      _telefonoPrincipalController.text = data['telefono_principal'] ?? '';
 
       // Normalizar Género para evitar errores de DropdownButton
       final g = data['genero'];
@@ -152,6 +173,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         final ep = da['estado_pago'];
         if (['Al día', 'Moroso'].contains(ep)) _estadoPago = ep;
         _autorizaWhatsapp = da['autoriza_whatsapp'] == true;
+        _asoFechaVinculacionCtrl.text = da['fecha_vinculacion'] ?? (data['datos_voluntario']?['fecha_vinculacion'] ?? '');
       }
 
       if (data['datos_voluntario'] is Map) {
@@ -162,6 +184,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         _volHoras.text = dv['horas_semana']?.toString() ?? '';
         _volUrlDoc.text = dv['url_doc'] ?? '';
         _volUrlCv.text = dv['url_cv'] ?? '';
+        _volFechaVinculacionCtrl.text = dv['fecha_vinculacion'] ?? '';
         _volCarta = dv['carta_compromiso_firmada'] == true;
         _volFormulario = dv['formulario_inscripcion'] == true;
       }
@@ -169,10 +192,19 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.memberId == null;
+  }
+
+  @override
   void dispose() {
+
     _numIdentController.dispose();
     _nombreController.dispose();
     _fechaNacController.dispose();
+    _fechaAtencionController.dispose();
+    _telefonoPrincipalController.dispose();
     _correoController.dispose();
     _dirController.dispose();
     _cpController.dispose();
@@ -188,6 +220,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     _volHoras.dispose();
     _volUrlDoc.dispose();
     _volUrlCv.dispose();
+    _volFechaVinculacionCtrl.dispose();
+    _asoFechaVinculacionCtrl.dispose();
     super.dispose();
   }
 
@@ -223,6 +257,12 @@ class _RegistrationFormState extends State<_RegistrationForm> {
           nombreCompleto: _nombreController.text.trim(),
           fechaNacimiento: _fechaNacController.text.isNotEmpty
               ? _fechaNacController.text
+              : null,
+          fechaAtencion: _fechaAtencionController.text.isNotEmpty
+              ? _fechaAtencionController.text
+              : null,
+          telefonoPrincipal: _telefonoPrincipalController.text.isNotEmpty
+              ? _telefonoPrincipalController.text.trim()
               : null,
           genero: _genero,
           correoElectronico: _correoController.text.isNotEmpty
@@ -274,6 +314,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                 estadoMembresia: _estadoMembresia,
                 estadoPago: _estadoPago,
                 autorizaWhatsapp: _autorizaWhatsapp,
+                fechaVinculacion: _asoFechaVinculacionCtrl.text.isNotEmpty
+                    ? _asoFechaVinculacionCtrl.text
+                    : null,
               )
             : null,
         esVoluntario: state.isVoluntario,
@@ -285,6 +328,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                 horasSemana: int.tryParse(_volHoras.text),
                 urlDoc: _volUrlDoc.text.isNotEmpty ? _volUrlDoc.text : null,
                 urlCv: _volUrlCv.text.isNotEmpty ? _volUrlCv.text : null,
+                fechaVinculacion: _volFechaVinculacionCtrl.text.isNotEmpty
+                    ? _volFechaVinculacionCtrl.text
+                    : null,
                 cartaCompromisoFirmada: _volCarta,
                 formularioInscripcion: _volFormulario,
               )
@@ -329,7 +375,249 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
   }
 
+  void _showGenerarExpedienteDialog(BuildContext context) {
+    final numExpAsignadoCtrl = TextEditingController();
+    final tramiteCtrl = TextEditingController();
+    final repLegalCtrl = TextEditingController();
+    final consultorioCtrl = TextEditingController();
+    final fechaPresCtrl = TextEditingController();
+    final fechaResCtrl = TextEditingController();
+
+    final now = DateTime.now();
+    fechaPresCtrl.text =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+    String aporteSocial = 'Sí';
+    bool solicitanteExtranjeria = false;
+    bool antecedentesApostillados = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 480,
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Generar Expediente',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0D47A1),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: numExpAsignadoCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nº Expediente Asignado (Opcional)',
+                      border: UnderlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: tramiteCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo Trámite (Ej: Renovación NIE)*',
+                      border: UnderlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: repLegalCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Representante Legal*',
+                      border: UnderlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: consultorioCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Consultorio Jurídico (Opcional)',
+                      border: UnderlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: aporteSocial,
+                    decoration: const InputDecoration(
+                      labelText: 'Aporte Social',
+                      border: UnderlineInputBorder(),
+                    ),
+                    items: ['Sí', 'No']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => aporteSocial = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Solicitante de Extranjería'),
+                    value: solicitanteExtranjeria,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (val) =>
+                        setDialogState(() => solicitanteExtranjeria = val ?? false),
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Antecedentes Traducidos/Apostillados'),
+                    value: antecedentesApostillados,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (val) =>
+                        setDialogState(() => antecedentesApostillados = val ?? false),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('Fecha Presentación: ',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime initial =
+                              DateTime.tryParse(fechaPresCtrl.text) ?? DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: initial,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              fechaPresCtrl.text =
+                                  "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                            });
+                          }
+                        },
+                        child: Text(fechaPresCtrl.text),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text('Fecha Resolución: ',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime initial =
+                              DateTime.tryParse(fechaResCtrl.text) ?? DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: initial,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              fechaResCtrl.text =
+                                  "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                            });
+                          }
+                        },
+                        child: Text(
+                            fechaResCtrl.text.isNotEmpty ? fechaResCtrl.text : 'Opcional'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0D47A1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          final tramite = tramiteCtrl.text.trim();
+                          final repLegal = repLegalCtrl.text.trim();
+                          if (tramite.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Por favor ingresa el tipo de trámite')),
+                            );
+                            return;
+                          }
+                          Navigator.pop(dialogCtx);
+                          try {
+                            final repo = context.read<ExpedienteRepository>();
+                            final exp = await repo.createExpediente(
+                              idPersona: widget.memberId!,
+                              tipoTramite: tramite,
+                              fechaPresentacion: fechaPresCtrl.text,
+                              numeroExpedienteAsignado:
+                                  numExpAsignadoCtrl.text.trim().isNotEmpty
+                                      ? numExpAsignadoCtrl.text.trim()
+                                      : null,
+                              representanteLegal:
+                                  repLegal.isNotEmpty ? repLegal : null,
+                              consultorioJuridico:
+                                  consultorioCtrl.text.trim().isNotEmpty
+                                      ? consultorioCtrl.text.trim()
+                                      : null,
+                              aporteSocial: aporteSocial,
+                              solicitanteExtranjeria: solicitanteExtranjeria,
+                              antecedentesTraducidosYApostillados:
+                                  antecedentesApostillados,
+                              fechaResolucion: fechaResCtrl.text.isNotEmpty
+                                  ? fechaResCtrl.text
+                                  : null,
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Expediente ${exp.numeroRegistro} generado con éxito'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text(e.toString().replaceAll('Exception: ', '')),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text('Guardar',
+                            style: TextStyle(
+                                color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
   @override
+
   Widget build(BuildContext context) {
     return BlocListener<RegistrationBloc, RegistrationState>(
       listener: (context, state) {
@@ -384,27 +672,91 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         children: [
           // Header Azul
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             color: AppColors.primaryBlue,
             child: Row(
               children: [
-                Icon(
-                  widget.memberId != null ? Icons.edit : Icons.person_add,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    widget.memberId != null
-                        ? 'Editar Miembro #${widget.memberId}'
-                        : 'Nuevo Registro Principal',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                if (widget.memberId != null) ...[
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      (_nombreController.text.isNotEmpty ? _nombreController.text[0] : 'P').toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlue,
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _nombreController.text.isNotEmpty ? _nombreController.text : 'Detalles de Miembro',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _correoController.text.isNotEmpty ? _correoController.text : 'Sin correo registrado',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.folder_open, size: 16, color: Colors.white),
+                    label: const Text(
+                      'Generar Expediente',
+                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    onPressed: () => _showGenerarExpedienteDialog(context),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      _isEditing ? Icons.edit_off : Icons.edit,
+                      color: Colors.white,
+                    ),
+                    tooltip: _isEditing ? 'Modo Lectura' : 'Modo Edición',
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = !_isEditing;
+                      });
+                    },
+                  ),
+                ] else ...[
+                  const Icon(Icons.person_add, color: Colors.white),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Nuevo Registro Principal',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
@@ -412,6 +764,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
               ],
             ),
           ),
+
 
           // Formulario
           Expanded(
@@ -490,11 +843,39 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                             controller: _fechaNacController,
                             readOnly: true,
                             decoration: const InputDecoration(
-                              labelText: 'Fecha Nacimiento',
+                              labelText: 'Fecha Nacimiento (Opcional)',
                               prefixIcon: Icon(Icons.calendar_today),
                             ),
                             onTap: () =>
                                 _selectDate(context, _fechaNacController),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _fechaAtencionController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Fecha de Atención (Opcional)',
+                              prefixIcon: Icon(Icons.event_available),
+                            ),
+                            onTap: () =>
+                                _selectDate(context, _fechaAtencionController),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _telefonoPrincipalController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Teléfono Principal (Opcional)',
+                              prefixIcon: Icon(Icons.phone),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -977,6 +1358,30 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                           setState(() => _volFormulario = val!),
                                     ),
                                   ],
+                                  if (widget.memberId != null) ...[
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.folder_open, size: 18),
+                                        label: const Text('Generar Expediente'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF0D47A1),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          if (!state.isVoluntario) {
+                                            context.read<RegistrationBloc>().add(const ToggleVoluntario(true));
+                                          }
+                                          _showGenerarExpedienteDialog(context);
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1029,9 +1434,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: state.status == RegistrationStatus.loading
-                            ? null
-                            : _submit,
+                        onPressed: (widget.memberId != null && !_isEditing)
+                            ? () => setState(() => _isEditing = true)
+                            : (state.status == RegistrationStatus.loading ? null : _submit),
                         child: state.status == RegistrationStatus.loading
                             ? const SizedBox(
                                 height: 20,
@@ -1041,7 +1446,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(widget.memberId != null ? 'Guardar Cambios' : 'Guardar Miembro'),
+                            : Text(
+                                widget.memberId != null
+                                    ? (_isEditing ? 'Guardar Cambios' : 'Editar Datos')
+                                    : 'Guardar Miembro',
+                              ),
                       ),
                     ),
                   ],
@@ -1054,3 +1463,4 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
   }
 }
+
