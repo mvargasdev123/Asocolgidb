@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../domain/models/member_registration_request.dart';
 import '../../domain/repositories/member_repository.dart';
 import '../../data/repositories/member_repository_impl.dart';
@@ -106,7 +107,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
 
   String _calcularAntiguedad(String fechaVinculacionStr) {
     if (fechaVinculacionStr.trim().isEmpty) return 'N/A';
-    final parsed = DateTime.tryParse(fechaVinculacionStr.trim());
+    final parsed = DateFormatter.parseDate(fechaVinculacionStr);
     if (parsed == null) return 'N/A';
     final now = DateTime.now();
     int years = now.year - parsed.year;
@@ -123,8 +124,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     setState(() {
       _numIdentController.text = data['numero_identificacion'] ?? '';
       _nombreController.text = data['nombre_completo'] ?? '';
-      _fechaNacController.text = data['fecha_nacimiento'] ?? '';
-      _fechaAtencionController.text = data['fecha_atencion'] ?? '';
+      _fechaNacController.text = DateFormatter.displayDate(data['fecha_nacimiento']);
+      _fechaAtencionController.text = DateFormatter.displayDate(data['fecha_atencion']);
       _telefonoPrincipalController.text = data['telefono_principal'] ?? '';
 
       // Normalizar Género para evitar errores de DropdownButton
@@ -157,7 +158,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       if (['Si', 'No', 'N/A'].contains(vg)) _violenciaGenero = vg;
 
       _tienePadron = data['tiene_padron'] == true;
-      _fechaPadronController.text = data['fecha_padron'] ?? '';
+      _fechaPadronController.text = DateFormatter.displayDate(data['fecha_padron']);
       _autorizaDatos = data['autoriza_datos'] == true;
       _autorizaImagen = data['autoriza_imagen'] == true;
       _emergenciaNombre.text = data['contacto_emergencia_nombre'] ?? '';
@@ -173,7 +174,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         final ep = da['estado_pago'];
         if (['Al día', 'Moroso'].contains(ep)) _estadoPago = ep;
         _autorizaWhatsapp = da['autoriza_whatsapp'] == true;
-        _asoFechaVinculacionCtrl.text = da['fecha_vinculacion'] ?? (data['datos_voluntario']?['fecha_vinculacion'] ?? '');
+        _asoFechaVinculacionCtrl.text = DateFormatter.displayDate(
+          da['fecha_vinculacion'] ?? (data['datos_voluntario']?['fecha_vinculacion'] ?? ''),
+        );
       }
 
       if (data['datos_voluntario'] is Map) {
@@ -184,7 +187,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         _volHoras.text = dv['horas_semana']?.toString() ?? '';
         _volUrlDoc.text = dv['url_doc'] ?? '';
         _volUrlCv.text = dv['url_cv'] ?? '';
-        _volFechaVinculacionCtrl.text = dv['fecha_vinculacion'] ?? '';
+        _volFechaVinculacionCtrl.text = DateFormatter.displayDate(dv['fecha_vinculacion']);
         _volCarta = dv['carta_compromiso_firmada'] == true;
         _volFormulario = dv['formulario_inscripcion'] == true;
       }
@@ -229,16 +232,16 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     BuildContext context,
     TextEditingController controller,
   ) async {
+    final DateTime initial = DateFormatter.parseDate(controller.text) ?? DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
     );
     if (picked != null) {
       setState(() {
-        controller.text =
-            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        controller.text = DateFormatter.formatMMDDYYYY(picked);
       });
     }
   }
@@ -384,8 +387,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     final fechaResCtrl = TextEditingController();
 
     final now = DateTime.now();
-    fechaPresCtrl.text =
-        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    fechaPresCtrl.text = DateFormatter.formatMMDDYYYY(now);
 
     String aporteSocial = 'Sí';
     bool solicitanteExtranjeria = false;
@@ -483,7 +485,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       TextButton(
                         onPressed: () async {
                           DateTime initial =
-                              DateTime.tryParse(fechaPresCtrl.text) ?? DateTime.now();
+                              DateFormatter.parseDate(fechaPresCtrl.text) ?? DateTime.now();
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: initial,
@@ -492,8 +494,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           );
                           if (picked != null) {
                             setDialogState(() {
-                              fechaPresCtrl.text =
-                                  "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                              fechaPresCtrl.text = DateFormatter.formatMMDDYYYY(picked);
                             });
                           }
                         },
@@ -508,7 +509,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       TextButton(
                         onPressed: () async {
                           DateTime initial =
-                              DateTime.tryParse(fechaResCtrl.text) ?? DateTime.now();
+                              DateFormatter.parseDate(fechaResCtrl.text) ?? DateTime.now();
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: initial,
@@ -517,8 +518,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           );
                           if (picked != null) {
                             setDialogState(() {
-                              fechaResCtrl.text =
-                                  "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                              fechaResCtrl.text = DateFormatter.formatMMDDYYYY(picked);
                             });
                           }
                         },

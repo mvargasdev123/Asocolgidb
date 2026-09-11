@@ -72,3 +72,27 @@ def test_excel_export_subsets(session: Session):
     wb_exp = openpyxl.load_workbook(io.BytesIO(bytes_exp))
     assert "EXP" in wb_exp.sheetnames
     assert "ASO" not in wb_exp.sheetnames
+
+
+def test_export_mm_dd_yyyy_format(session: Session):
+    from datetime import date
+    p = Persona(
+        numero_identificacion="Z99988877A",
+        nombre_completo="Export Date Test",
+        fecha_nacimiento=date(1955, 11, 13),
+        activo=True
+    )
+    session.add(p)
+    session.commit()
+
+    bytes_out = generar_excel_memoria(session, tipo_exportacion="completa")
+    wb = openpyxl.load_workbook(io.BytesIO(bytes_out))
+    ws = wb["BD"]
+    
+    found_date = None
+    for row in ws.iter_rows(values_only=True):
+        if len(row) > 3 and row[2] == "Z99988877A":
+            found_date = row[13] # FECHA NACIMIENTO column index 13
+            break
+    assert found_date == "11/13/1955"
+

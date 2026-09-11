@@ -21,6 +21,15 @@ def _clean_val(val: Any) -> Optional[str]:
         return None
     return val_str
 
+def _format_date_export(d: Any) -> Optional[str]:
+    if d is None:
+        return None
+    if isinstance(d, datetime):
+        d = d.date()
+    if isinstance(d, date):
+        return d.strftime("%m/%d/%Y")
+    return str(d)
+
 def _parse_date(val: Any) -> Optional[date]:
     if val is None:
         return None
@@ -29,15 +38,22 @@ def _parse_date(val: Any) -> Optional[date]:
     if isinstance(val, datetime):
         return val.date()
     val_str = str(val).strip()
-    if not val_str or val_str.lower() in ["none", "null", "nan"]:
+    if not val_str or val_str.lower() in ["none", "null", "nan", "n/a"]:
         return None
-    # Intenta formatos comunes: DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY, YYYY/MM/DD
-    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%Y/%m/%d"):
+    if " " in val_str:
+        val_str = val_str.split(" ")[0]
+    elif "T" in val_str:
+        val_str = val_str.split("T")[0]
+
+    # Intenta formatos con prioridad Mes/Día/Año (MM/DD/YYYY, MM-DD-YYYY)
+    for fmt in ("%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y", "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d"):
         try:
             return datetime.strptime(val_str, fmt).date()
         except ValueError:
             continue
     return None
+
+
 
 def _get_or_create_catalog(session: Session, model_class, name_attr: str, val: Optional[str]) -> Optional[int]:
     if not val:
@@ -127,7 +143,7 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
             comentarios_bd = _obtener_comentarios_texto(session, p.id, ["Persona", "General", "BD"])
 
             ws_bd.append([
-                str(p.fecha_atencion) if p.fecha_atencion else None,
+                _format_date_export(p.fecha_atencion),
                 tipo_doc_nombre,
                 p.numero_identificacion,
                 p.nombre_completo,
@@ -140,7 +156,7 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
                 p.direccion_residencia,
                 ciudad_nombre,
                 p.codigo_postal,
-                str(p.fecha_nacimiento) if p.fecha_nacimiento else None,
+                _format_date_export(p.fecha_nacimiento),
                 nac_nombre,
                 p.genero,
                 p.situacion_admin,
@@ -148,7 +164,7 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
                 p.madre_soltera,
                 p.violencia_genero,
                 "Si" if p.tiene_padron else ("No" if p.tiene_padron is False else None),
-                str(p.fecha_padron) if p.fecha_padron else None,
+                _format_date_export(p.fecha_padron),
                 p.contacto_emergencia_nombre,
                 p.contacto_emergencia_parentesco,
                 p.contacto_emergencia_telefono,
@@ -178,14 +194,14 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
                 e.numero_registro,
                 e.numero_expediente_asignado,
                 e.tipo_tramite,
-                str(e.fecha_presentacion) if e.fecha_presentacion else None,
+                _format_date_export(e.fecha_presentacion),
                 e.representante_legal,
                 e.estado,
                 e.consultorio_juridico,
                 e.aporte_social,
                 "Si" if e.solicitante_extranjeria else ("No" if e.solicitante_extranjeria is False else None),
                 "Si" if e.antecedentes_traducidos_y_apostillados else ("No" if e.antecedentes_traducidos_y_apostillados is False else None),
-                str(e.fecha_resolucion) if e.fecha_resolucion else None,
+                _format_date_export(e.fecha_resolucion),
                 comentarios_exp
             ])
 
@@ -208,7 +224,7 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
                 a.metodo_pago or "EFECTIVO",
                 a.estado_pago or "SI",
                 "SI" if a.autoriza_whatsapp else "NO",
-                str(a.fecha_vinculacion) if a.fecha_vinculacion else None,
+                _format_date_export(a.fecha_vinculacion),
                 comentarios_aso
             ])
 
@@ -229,8 +245,8 @@ def generar_excel_memoria(session: Session, tipo_exportacion: str = "completa") 
                 v.id_persona,
                 v.cargo,
                 carta_str,
-                str(v.fecha_alta) if v.fecha_alta else (str(v.fecha_vinculacion) if v.fecha_vinculacion else None),
-                str(v.fecha_baja) if v.fecha_baja else None,
+                _format_date_export(v.fecha_alta) or _format_date_export(v.fecha_vinculacion),
+                _format_date_export(v.fecha_baja),
                 v.tipo,
                 v.campo_accion,
                 comentarios_vol
