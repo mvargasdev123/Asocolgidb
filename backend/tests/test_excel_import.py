@@ -86,16 +86,25 @@ def test_importacion_definitiva_sobreescribir(session: Session):
     assert p_check.nombre_completo == "Maria Sobreescrita"
 
 
-def test_real_asocolgi_bd_file_import(session: Session):
-    import os
-    file_path = "/home/miguel/Documentos/Mamá cosas/Asocolgi_v2/asocolgi_bd (2).xlsx"
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            file_bytes = f.read()
+def test_import_mm_dd_yyyy_dates(session: Session):
+    headers = [
+        "FECHA ATENCIÓN", "TIPO IDENTIFICACION", "NÚMERO IDENTIFICACION", "NOMBRE COMPLETO",
+        "FECHA NACIMIENTO", "FECHA PADRON"
+    ]
+    # 11/13/1955 -> Nov 13, 1955. 01/29/1981 -> Jan 29, 1981
+    row1 = ["09/06/2026", "NIE", "X11223344M", "Fecha Test MM DD YYYY", "11/13/1955", "01/29/1981"]
+    excel_bytes = _crear_excel_dummy([headers, row1])
 
-        reporte = analizar_excel_dry_run(file_bytes, session)
-        assert reporte["total_filas"] >= 0
+    res = ejecutar_importacion_definitiva(excel_bytes, {}, session)
+    assert res["status"] == "success"
 
-        res = ejecutar_importacion_definitiva(file_bytes, {}, session)
-        assert res["status"] == "success"
+    p = session.exec(select(Persona).where(Persona.numero_identificacion == "X11223344M")).first()
+    assert p is not None
+    assert p.fecha_nacimiento.year == 1955
+    assert p.fecha_nacimiento.month == 11
+    assert p.fecha_nacimiento.day == 13
+    assert p.fecha_padron.year == 1981
+    assert p.fecha_padron.month == 1
+    assert p.fecha_padron.day == 29
+
 

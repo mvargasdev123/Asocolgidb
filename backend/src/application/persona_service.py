@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from fastapi import HTTPException, status
 from domain.schemas.persona_schemas import PersonaCreateRequest
 from domain.models.persona import Persona
@@ -27,6 +28,16 @@ class PersonaService:
     def _persona_to_dict(self, persona: Persona) -> dict:
         data = persona.model_dump()
         
+        def _fmt_d(d):
+            if d is None: return None
+            if isinstance(d, datetime): d = d.date()
+            if isinstance(d, date): return d.strftime("%m/%d/%Y")
+            return str(d)
+
+        data["fecha_nacimiento"] = _fmt_d(persona.fecha_nacimiento)
+        data["fecha_atencion"] = _fmt_d(persona.fecha_atencion)
+        data["fecha_padron"] = _fmt_d(persona.fecha_padron)
+        
         # Resolver nombres de texto de los catálogos dinámicos
         data["tipo_documento"] = self._obtener_nombre_catalogo(TipoDocumento, persona.id_tipo_documento)
         data["nacionalidad"] = self._obtener_nombre_catalogo(Nacionalidad, persona.id_nacionalidad)
@@ -39,9 +50,23 @@ class PersonaService:
         es_asoc = persona.datos_asociado is not None and persona.datos_asociado.estado_membresia != "Inactivo"
         es_vol = persona.datos_voluntario is not None
         data["es_asociado"] = es_asoc
-        data["datos_asociado"] = persona.datos_asociado.model_dump() if persona.datos_asociado else None
+        if persona.datos_asociado:
+            da_dict = persona.datos_asociado.model_dump()
+            da_dict["fecha_vinculacion"] = _fmt_d(persona.datos_asociado.fecha_vinculacion)
+            data["datos_asociado"] = da_dict
+        else:
+            data["datos_asociado"] = None
+
         data["es_voluntario"] = es_vol
-        data["datos_voluntario"] = persona.datos_voluntario.model_dump() if persona.datos_voluntario else None
+        if persona.datos_voluntario:
+            dv_dict = persona.datos_voluntario.model_dump()
+            dv_dict["fecha_vinculacion"] = _fmt_d(persona.datos_voluntario.fecha_vinculacion)
+            dv_dict["fecha_alta"] = _fmt_d(persona.datos_voluntario.fecha_alta)
+            dv_dict["fecha_baja"] = _fmt_d(persona.datos_voluntario.fecha_baja)
+            data["datos_voluntario"] = dv_dict
+        else:
+            data["datos_voluntario"] = None
+
         return data
 
     def registrar_persona(self, request: PersonaCreateRequest) -> dict:

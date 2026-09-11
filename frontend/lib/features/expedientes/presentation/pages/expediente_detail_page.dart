@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/expediente_model.dart';
 import '../bloc/expedientes_bloc.dart';
@@ -179,10 +180,10 @@ class _ExpedienteDetailPageState extends State<ExpedienteDetailPage> {
           const SizedBox(height: 10),
           _buildInfoRow('Antecedentes Apostillados', widget.expediente.antecedentesTraducidosYApostillados ? 'Sí' : 'No'),
           const SizedBox(height: 10),
-          _buildInfoRow('Fecha Presentación', widget.expediente.fechaPresentacion),
+          _buildInfoRow('Fecha Presentación', DateFormatter.displayDate(widget.expediente.fechaPresentacion)),
           if (widget.expediente.fechaResolucion != null && widget.expediente.fechaResolucion!.isNotEmpty) ...[
             const SizedBox(height: 10),
-            _buildInfoRow('Fecha Resolución', widget.expediente.fechaResolucion!),
+            _buildInfoRow('Fecha Resolución', DateFormatter.displayDate(widget.expediente.fechaResolucion!)),
           ],
           const SizedBox(height: 28),
           const Text(

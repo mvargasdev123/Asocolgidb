@@ -1,6 +1,28 @@
-from typing import Optional
-from datetime import date
-from pydantic import BaseModel
+from typing import Optional, Any
+from datetime import date, datetime
+from pydantic import BaseModel, field_validator
+
+def parse_flexible_date(v: Any) -> Optional[date]:
+    if v is None or v == "":
+        return None
+    if isinstance(v, date) and not isinstance(v, datetime):
+        return v
+    if isinstance(v, datetime):
+        return v.date()
+    val_str = str(v).strip()
+    if not val_str or val_str.lower() in ["none", "null", "nan", "n/a"]:
+        return None
+    if " " in val_str:
+        val_str = val_str.split(" ")[0]
+    elif "T" in val_str:
+        val_str = val_str.split("T")[0]
+
+    for fmt in ("%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y", "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Formato de fecha inválido: '{val_str}'. Use MM/DD/YYYY o YYYY-MM-DD.")
 
 class IdentificacionSchema(BaseModel):
     tipo_documento: Optional[str] = None
@@ -18,6 +40,10 @@ class DatosPersonalesSchema(BaseModel):
     codigo_postal: Optional[str] = None
     ciudad: Optional[str] = None
 
+    @field_validator("fecha_nacimiento", "fecha_atencion", mode="before")
+    def validate_dates(cls, v: Any) -> Optional[date]:
+        return parse_flexible_date(v)
+
 class SituacionSocialSchema(BaseModel):
     situacion_admin: Optional[str] = None
     unidad_familiar: Optional[int] = None
@@ -34,6 +60,10 @@ class LegalAcogidaSchema(BaseModel):
     autoriza_datos: Optional[bool] = None
     autoriza_imagen: Optional[bool] = None
 
+    @field_validator("fecha_padron", mode="before")
+    def validate_dates(cls, v: Any) -> Optional[date]:
+        return parse_flexible_date(v)
+
 class ContactoEmergenciaSchema(BaseModel):
     nombre: Optional[str] = None
     parentesco: Optional[str] = None
@@ -45,6 +75,10 @@ class DatosAsociadoSchema(BaseModel):
     estado_pago: Optional[str] = None
     autoriza_whatsapp: Optional[bool] = None
     fecha_vinculacion: Optional[date] = None
+
+    @field_validator("fecha_vinculacion", mode="before")
+    def validate_dates(cls, v: Any) -> Optional[date]:
+        return parse_flexible_date(v)
 
 class DatosVoluntarioSchema(BaseModel):
     cargo: Optional[str] = None
@@ -58,6 +92,10 @@ class DatosVoluntarioSchema(BaseModel):
     fecha_baja: Optional[date] = None
     carta_compromiso_firmada: Optional[bool] = None
     formulario_inscripcion: Optional[bool] = None
+
+    @field_validator("fecha_vinculacion", "fecha_alta", "fecha_baja", mode="before")
+    def validate_dates(cls, v: Any) -> Optional[date]:
+        return parse_flexible_date(v)
 
 class PersonaCreateRequest(BaseModel):
     identificacion: IdentificacionSchema
