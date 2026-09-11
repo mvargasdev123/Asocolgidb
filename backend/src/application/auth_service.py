@@ -11,7 +11,7 @@ from infrastructure.email_service import enviar_alerta_seguridad, enviar_token_r
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "un_secreto_super_seguro_para_desarrollo")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 20
 
 class AuthService:
     def __init__(self, repository: AuthRepository):
@@ -35,6 +35,11 @@ class AuthService:
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
+
+    def refrescar_token(self, usuario: Usuario) -> dict:
+        datos_token = {"sub": str(usuario.id), "email": usuario.email, "es_admin": usuario.es_admin}
+        nuevo_token = self.crear_token_acceso(datos_token, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        return {"access_token": nuevo_token, "token_type": "bearer"}
 
     async def _manejar_intento_fallido(self, ip_address: str):
         intento = self.repository.get_intento_ip(ip_address)

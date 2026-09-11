@@ -83,3 +83,21 @@ def test_recuperacion_contrasena_usuario_no_existe(client):
     )
     assert response.status_code == 200
     assert "mensaje" in response.json()
+
+def test_refresh_token(client, usuario_prueba):
+    """Valida la renovación del token de acceso (20 min) vía POST /auth/refresh."""
+    login_res = client.post(
+        "/auth/login",
+        data={"username": "test@asocolgi.org", "password": "password123"}
+    )
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+
+    refresh_res = client.post(
+        "/auth/refresh",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert refresh_res.status_code == 200
+    assert "access_token" in refresh_res.json()
+    assert refresh_res.json()["token_type"] == "bearer"
+

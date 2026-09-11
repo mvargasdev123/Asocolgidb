@@ -93,6 +93,10 @@ class PersonaRepository:
                 statement = statement.where(
                     (Persona.genero.ilike("M%")) | (Persona.genero.ilike("Mujer%")) | (Persona.genero.ilike("Femenino%"))
                 )
+            elif g_clean in ["lgbt", "lgbti", "lgtbi", "lgbtiq", "lgbti+", "diverso", "diversidad", "comunidad lgbti"]:
+                statement = statement.where(
+                    (Persona.genero.ilike("%LGBT%")) | (Persona.genero.ilike("%LGTB%")) | (Persona.genero.ilike("%Diverso%"))
+                )
             else:
                 statement = statement.where(Persona.genero.ilike(f"%{genero.strip()}%"))
 

@@ -169,6 +169,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     DropdownMenuItem(value: 'TODOS', child: Text('Género: Todos')),
                     DropdownMenuItem(value: 'Hombres', child: Text('Hombres')),
                     DropdownMenuItem(value: 'Mujeres', child: Text('Mujeres')),
+                    DropdownMenuItem(value: 'LGBTI', child: Text('Comunidad LGBTI')),
                   ],
                   onChanged: (val) {
                     if (val != null) {

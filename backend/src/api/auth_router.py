@@ -31,6 +31,19 @@ async def login(
     
     return await auth_service.login(request_data, ip_address)
 
+from api.dependencies import get_current_user
+from domain.models.usuario import Usuario
+
+@router.post("/refresh", response_model=LoginResponse)
+async def refresh_token(
+    current_user: Usuario = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Renueva el token de acceso JWT por otros 20 minutos si el usuario está autenticado y activo.
+    """
+    return auth_service.refrescar_token(current_user)
+
 @router.post("/forgot-password")
 async def forgot_password(auth_service: AuthService = Depends(get_auth_service)):
     """

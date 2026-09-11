@@ -40,6 +40,15 @@ def test_busqueda_y_filtros_personas(client: TestClient, session: Session, usuar
     # Asociar p1 como Asociado y p2 como Voluntario
     aso1 = DatosAsociado(id_persona=p1.id, estado_membresia="Activo")
     vol2 = DatosVoluntario(id_persona=p2.id, cargo="Coordinador")
+    p4 = Persona(
+        numero_identificacion="44444444D",
+        nombre_completo="Alex Rivera",
+        genero="LGBTI",
+        situacion_admin="Regular",
+        activo=True
+    )
+
+    session.add_all([p1, p2, p3, p4])
     session.add_all([aso1, vol2])
     session.commit()
 
@@ -55,7 +64,7 @@ def test_busqueda_y_filtros_personas(client: TestClient, session: Session, usuar
     assert len(res_doc.json()) == 1
     assert res_doc.json()[0]["nombre_completo"] == "Maria Fernandez"
 
-    # 3. Prueba Filtro por Género (Hombres vs Mujeres)
+    # 3. Prueba Filtro por Género (Hombres vs Mujeres vs LGBTI)
     res_hombres = client.get("/personas/?genero=Hombres", headers=headers)
     assert res_hombres.status_code == 200
     nombres_h = [p["nombre_completo"] for p in res_hombres.json()]
@@ -68,6 +77,12 @@ def test_busqueda_y_filtros_personas(client: TestClient, session: Session, usuar
     nombres_m = [p["nombre_completo"] for p in res_mujeres.json()]
     assert "Maria Fernandez" in nombres_m
     assert "Carlos Rodriguez" not in nombres_m
+
+    res_lgbti = client.get("/personas/?genero=LGBTI", headers=headers)
+    assert res_lgbti.status_code == 200
+    nombres_lgbt = [p["nombre_completo"] for p in res_lgbti.json()]
+    assert "Alex Rivera" in nombres_lgbt
+    assert "Carlos Rodriguez" not in nombres_lgbt
 
     # 4. Prueba Filtro por Rol (Asociados, Voluntarios, Externos)
     res_asoc = client.get("/personas/?rol=Asociados", headers=headers)
@@ -82,8 +97,9 @@ def test_busqueda_y_filtros_personas(client: TestClient, session: Session, usuar
 
     res_ext = client.get("/personas/?rol=Externos", headers=headers)
     assert res_ext.status_code == 200
-    assert len(res_ext.json()) == 1
-    assert res_ext.json()[0]["nombre_completo"] == "Juan Perez"
+    nombres_ext = [p["nombre_completo"] for p in res_ext.json()]
+    assert "Juan Perez" in nombres_ext
+    assert "Alex Rivera" in nombres_ext
 
     # 5. Prueba Filtro por Situación Administrativa (Regulares, Irregulares, En trámite)
     res_reg = client.get("/personas/?situacion_admin=Regulares", headers=headers)

@@ -51,6 +51,31 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthResponse> refreshToken(String currentToken) async {
+    try {
+      final response = await _dio.post(
+        '/auth/refresh',
+        options: Options(
+          headers: {'Authorization': 'Bearer $currentToken'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return AuthResponse.fromJson(response.data);
+      } else {
+        throw Exception('Sesión expirada tras 20 minutos de inactividad');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Sesión expirada tras 20 minutos de inactividad.');
+      }
+      throw Exception('Error al renovar la sesión.');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
   Future<void> forgotPassword() async {
     try {
       // Envía a la cuenta predefinida por la especificación

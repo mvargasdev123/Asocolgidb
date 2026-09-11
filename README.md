@@ -184,7 +184,8 @@ frontend/lib/
 
 | Método | Endpoint | Descripción | Auth Requerida |
 | :--- | :--- | :--- | :---: |
-| `POST` | `/api/v1/auth/login` | Inicio de sesión y obtención de Token JWT | ❌ |
+| `POST` | `/api/v1/auth/login` | Inicio de sesión y obtención de Token JWT (20 min expiración) | ❌ |
+| `POST` | `/api/v1/auth/refresh` | Renovar Token de acceso por otros 20 min si está activo | 🔒 |
 | `GET` | `/api/v1/personas/` | Listar personas con búsqueda (`q`) y filtros (`genero`, `rol`, `situacion_admin`) | 🔒 |
 | `POST` | `/api/v1/personas/` | Registrar nueva persona con datos personales y de rol | 🔒 |
 | `GET` | `/api/v1/personas/{id}` | Obtener detalle completo de una persona | 🔒 |
