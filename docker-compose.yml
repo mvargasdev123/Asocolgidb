@@ -1,0 +1,35 @@
+name: asocolgi
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: asocolgi-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///local.db}
+      - SECRET_KEY=${SECRET_KEY:-asocolgi-super-secret-key-prod-2026}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=480
+    networks:
+      - asocolgi-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: asocolgi-frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - asocolgi-network
+
+networks:
+  asocolgi-network:
+    driver: bridge
