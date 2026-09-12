@@ -354,6 +354,6 @@ dart analyze --no-fatal-warnings lib/
 
 <div align="center">
 
-Desarrollado con ❤️ para la **Asociación Colombiana en Galicia (Asocolgi)**.
+Desarrollado con ❤️ para la **Asociación Colombiana en Girona(Asocolgi)**.
 
 </div>
