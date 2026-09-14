@@ -35,6 +35,7 @@ backend/htmlcov/
 frontend/.dart_tool/
 frontend/.packages
 frontend/build/
+!frontend/build/web/
 frontend/.pub-cache/
 frontend/.pub/
 frontend/pubspec.lock
