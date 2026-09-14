@@ -10,7 +10,14 @@ class DioClient {
   final TokenStorage tokenStorage;
 
   DioClient({required this.tokenStorage})
-      : dio = Dio(BaseOptions(baseUrl: baseUrl)) {
+      : dio = Dio(
+          BaseOptions(
+            baseUrl: baseUrl,
+            connectTimeout: const Duration(seconds: 60),
+            receiveTimeout: const Duration(seconds: 60),
+            sendTimeout: const Duration(seconds: 60),
+          ),
+        ) {
     
     dio.interceptors.add(
       InterceptorsWrapper(
