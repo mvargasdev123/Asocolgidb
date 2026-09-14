@@ -34,14 +34,18 @@ class AuthRepositoryImpl implements AuthRepository {
         }
         if (e.response?.statusCode == 429) {
           throw Exception(
-            'IP bloqueada temporalmente por intentos fallidos. Revisa el correo oficial.',
+            'IP bloqueada temporalmente por intentos fallidos.',
           );
         } else if (e.response?.statusCode == 401 ||
             e.response?.statusCode == 403) {
           throw Exception('Credenciales incorrectas');
         }
       }
-      throw Exception('Error de conexión con el servidor.');
+      throw Exception(
+        e.message != null && e.message!.isNotEmpty
+            ? 'Error de conexión: ${e.message}'
+            : 'Error de conexión con el servidor.',
+      );
     } catch (e) {
       throw Exception(e.toString());
     }

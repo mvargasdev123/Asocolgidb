@@ -36,8 +36,16 @@ def create_db_and_tables():
     migrate_db_schema()
     try:
         with Session(engine) as session:
-            from domain.models.usuario import Usuario
+            from domain.models.usuario import Usuario, IntentoLoginIP
             import bcrypt
+            
+            # Limpiar cualquier bloqueo de IP acumulado durante las pruebas
+            try:
+                session.exec(text("DELETE FROM intentologinip"))
+                session.commit()
+            except Exception:
+                pass
+
             user_exist = session.exec(select(Usuario).where(Usuario.email == "asocolgibasededatos@gmail.com")).first()
             hashed = bcrypt.hashpw("AsocolgiDB2026".encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
             if not user_exist:
