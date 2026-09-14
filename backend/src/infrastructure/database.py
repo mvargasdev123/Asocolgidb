@@ -44,7 +44,7 @@ def create_db_and_tables():
                 session.exec(text("DELETE FROM intentologinip"))
                 session.commit()
             except Exception:
-                pass
+                session.rollback()
 
             user_exist = session.exec(select(Usuario).where(Usuario.email == "asocolgibasededatos@gmail.com")).first()
             hashed = bcrypt.hashpw("AsocolgiDB2026".encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
