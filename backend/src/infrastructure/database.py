@@ -37,11 +37,12 @@ def create_db_and_tables():
     try:
         with Session(engine) as session:
             from domain.models.usuario import Usuario, IntentoLoginIP
+            from sqlmodel import delete
             import bcrypt
             
             # Limpiar cualquier bloqueo de IP acumulado durante las pruebas
             try:
-                session.exec(text("DELETE FROM intentologinip"))
+                session.exec(delete(IntentoLoginIP))
                 session.commit()
             except Exception:
                 session.rollback()

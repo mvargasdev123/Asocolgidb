@@ -13,6 +13,9 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "un_secreto_super_seguro_para_desarroll
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 20
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
@@ -29,9 +32,9 @@ class AuthService:
     def crear_token_acceso(self, data: dict, expires_delta: timedelta = None):
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = _now() + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = _now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
@@ -46,22 +49,24 @@ class AuthService:
         if not intento:
             intento = IntentoLoginIP(ip_address=ip_address)
         
+        # Normalizar ultimo_intento si viene timezone-aware de la base de datos
+        ultimo = intento.ultimo_intento
+        if ultimo and ultimo.tzinfo is not None:
+            ultimo = ultimo.astimezone(timezone.utc).replace(tzinfo=None)
+
+        now_time = _now()
+
         # Resetear historial tras 24 horas del último bloqueo o intento
-        if intento.ultimo_intento and datetime.utcnow() - intento.ultimo_intento > timedelta(hours=24):
+        if ultimo and now_time - ultimo > timedelta(hours=24):
             intento.intentos_fallidos = 0
             intento.bloqueado_hasta = None
 
         intento.intentos_fallidos += 1
-        intento.ultimo_intento = datetime.utcnow()
+        intento.ultimo_intento = now_time
 
         bloqueo_minutos = 0
         tiempo_bloqueo_str = ""
 
-        # Lógica de bloqueos:
-        # - Si falla 3 intentos consecutivos -> bloqueo de 15 segundos
-        # - Si falla 4 intentos -> bloqueo de 30 segundos
-        # - Si falla 5 intentos -> bloqueo de 5 minutos
-        # - Si falla 6 o más intentos -> bloqueo recurrente de 10 minutos
         if intento.intentos_fallidos == 3:
             bloqueo_minutos = 15 / 60.0 # 15 seg
             tiempo_bloqueo_str = "15 segundos"
@@ -76,14 +81,12 @@ class AuthService:
             tiempo_bloqueo_str = "10 minutos"
 
         if bloqueo_minutos > 0:
-            intento.bloqueado_hasta = datetime.utcnow() + timedelta(minutes=bloqueo_minutos)
+            intento.bloqueado_hasta = now_time + timedelta(minutes=bloqueo_minutos)
             self.repository.guardar_intento_ip(intento)
             await enviar_alerta_seguridad(ip_address, tiempo_bloqueo_str)
-            # Para el 3er fallo bloqueamos 15s, etc. La excepción la lanzamos para que se aplique.
         else:
             self.repository.guardar_intento_ip(intento)
         
-        # Siempre respondemos el mismo error genérico para no dar pistas
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas"
@@ -92,13 +95,22 @@ class AuthService:
     async def login(self, request: LoginRequest, ip_address: str):
         # 1. Chequear si la IP está actualmente bloqueada
         intento = self.repository.get_intento_ip(ip_address)
+        now_time = _now()
         if intento:
+            ultimo = intento.ultimo_intento
+            if ultimo and ultimo.tzinfo is not None:
+                ultimo = ultimo.astimezone(timezone.utc).replace(tzinfo=None)
+
+            bloqueado = intento.bloqueado_hasta
+            if bloqueado and bloqueado.tzinfo is not None:
+                bloqueado = bloqueado.astimezone(timezone.utc).replace(tzinfo=None)
+
             # Resetear historial si pasaron 24 horas
-            if intento.ultimo_intento and datetime.utcnow() - intento.ultimo_intento > timedelta(hours=24):
+            if ultimo and now_time - ultimo > timedelta(hours=24):
                 intento.intentos_fallidos = 0
                 intento.bloqueado_hasta = None
                 self.repository.guardar_intento_ip(intento)
-            elif intento.bloqueado_hasta and intento.bloqueado_hasta > datetime.utcnow():
+            elif bloqueado and bloqueado > now_time:
                 # Sigue bloqueado
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
