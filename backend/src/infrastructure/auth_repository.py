@@ -7,7 +7,8 @@ class AuthRepository:
         self.session = session
 
     def get_usuario_por_email(self, email: str) -> Optional[Usuario]:
-        return self.session.exec(select(Usuario).where(Usuario.email == email)).first()
+        from sqlalchemy import func
+        return self.session.exec(select(Usuario).where(func.lower(Usuario.email) == email.strip().lower())).first()
 
     def get_intento_ip(self, ip_address: str) -> Optional[IntentoLoginIP]:
         return self.session.exec(select(IntentoLoginIP).where(IntentoLoginIP.ip_address == ip_address)).first()
