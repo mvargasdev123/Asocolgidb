@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/file_picker_helper.dart';
 import '../bloc/excel_bloc.dart';
 import '../bloc/excel_event.dart';
 import '../bloc/excel_state.dart';
@@ -24,16 +25,12 @@ class _ImportDialogState extends State<ImportDialog> {
 
   Future<void> _pickFile() async {
     try {
-      final files = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls'],
-      );
-
-      if (files.isNotEmpty) {
-        final file = files.first;
-        final bytes = await file.readAsBytes();
+      final res = await CustomFilePicker.pickExcelFile();
+      if (res != null) {
+        final bytes = List<int>.from(res['bytes'] as List);
+        final name = res['name'] as String;
         if (bytes.isNotEmpty) {
-          _processFile(bytes, file.name);
+          _processFile(bytes, name);
         } else {
           _showError('No se pudieron leer los datos del archivo seleccionado.');
         }
