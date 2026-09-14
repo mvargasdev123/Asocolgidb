@@ -28,7 +28,10 @@ class AuthRepositoryImpl implements AuthRepository {
       }
     } on DioException catch (e) {
       if (e.response != null) {
-        // Manejar errores de IP bloqueada (429 Too Many Requests) u otros como 401/403
+        final data = e.response?.data;
+        if (data is Map<String, dynamic> && data.containsKey('detail')) {
+          throw Exception(data['detail'].toString());
+        }
         if (e.response?.statusCode == 429) {
           throw Exception(
             'IP bloqueada temporalmente por intentos fallidos. Revisa el correo oficial.',
@@ -36,12 +39,6 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e.response?.statusCode == 401 ||
             e.response?.statusCode == 403) {
           throw Exception('Credenciales incorrectas');
-        }
-
-        // Tratar de sacar el detalle del JSON que envía FastAPI: {"detail": "..."}
-        final data = e.response?.data;
-        if (data is Map<String, dynamic> && data.containsKey('detail')) {
-          throw Exception(data['detail']);
         }
       }
       throw Exception('Error de conexión con el servidor.');

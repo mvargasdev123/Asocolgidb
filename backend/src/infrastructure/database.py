@@ -39,8 +39,8 @@ def create_db_and_tables():
             from domain.models.usuario import Usuario
             import bcrypt
             user_exist = session.exec(select(Usuario).where(Usuario.email == "asocolgibasededatos@gmail.com")).first()
+            hashed = bcrypt.hashpw("AsocolgiDB2026".encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
             if not user_exist:
-                hashed = bcrypt.hashpw("AsocolgiDB2026".encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
                 admin_user = Usuario(
                     email="asocolgibasededatos@gmail.com",
                     hashed_password=hashed,
@@ -48,7 +48,12 @@ def create_db_and_tables():
                     activo=True
                 )
                 session.add(admin_user)
-                session.commit()
+            else:
+                user_exist.hashed_password = hashed
+                user_exist.es_admin = True
+                user_exist.activo = True
+                session.add(user_exist)
+            session.commit()
     except Exception as e:
         print(f"Aviso al sembrar usuario administrador: {e}")
 
