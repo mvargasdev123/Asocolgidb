@@ -28988,7 +28988,7 @@ anD:function anD(a,b){this.a=a
 this.b=b},
 TB:function TB(){},
 alT:function alT(a){this.a=a},
-b0U(a){var s=new A.x6(A.b0W(A.b_F("http://127.0.0.1:8001")),a)
+b0U(a){var s=new A.x6(A.b0W(A.b_F("https://asocolgi-backend.onrender.com")),a)
 s.ac_(a)
 return s},
 x6:function x6(a,b){this.a=a
