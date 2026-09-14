@@ -4,7 +4,7 @@ import 'token_storage.dart';
 class DioClient {
   static const String baseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://asocolgi-backend.onrender.com',
+    defaultValue: 'https://asocolgidb.onrender.com',
   );
   final Dio dio;
   final TokenStorage tokenStorage;
