@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/excel_bloc.dart';
 import '../bloc/excel_event.dart';
@@ -16,38 +17,79 @@ class ImportDialog extends StatefulWidget {
 class _ImportDialogState extends State<ImportDialog> {
   List<int>? _selectedFileBytes;
   String? _selectedFileName;
+  bool _isDragging = false;
 
   // Mapa de decisiones: identificacion -> 'omitir' | 'sobreescribir'
   final Map<String, String> _decisiones = {};
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
-      withData: true,
-    );
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+      );
 
-    if (result.isNotEmpty) {
-      final file = result.first;
-      final bytes = await file.readAsBytes();
-      if (bytes.isNotEmpty) {
-        setState(() {
-          _selectedFileBytes = bytes;
-          _selectedFileName = file.name;
-          _decisiones.clear();
-        });
-
-        // Disparar análisis Dry-Run
-        if (mounted) {
-          context.read<ExcelBloc>().add(
-                AnalizarImportacionEvent(
-                  bytes: bytes,
-                  filename: file.name,
-                ),
-              );
+      if (files.isNotEmpty) {
+        final file = files.first;
+        final bytes = await file.readAsBytes();
+        if (bytes.isNotEmpty) {
+          _processFile(bytes, file.name);
+        } else {
+          _showError('No se pudieron leer los datos del archivo seleccionado.');
         }
       }
+    } catch (e) {
+      _showError('Error al abrir explorador de archivos: $e');
     }
+  }
+
+  Future<void> _handleDroppedFile(DropDoneDetails details) async {
+    if (details.files.isEmpty) return;
+    try {
+      final file = details.files.first;
+      final bytes = await file.readAsBytes();
+      final name = file.name;
+
+      if (!name.toLowerCase().endsWith('.xlsx') && !name.toLowerCase().endsWith('.xls')) {
+        _showError('El archivo debe ser en formato Excel (.xlsx o .xls)');
+        return;
+      }
+
+      if (bytes.isNotEmpty) {
+        _processFile(bytes, name);
+      } else {
+        _showError('El archivo arrastrado está vacío.');
+      }
+    } catch (e) {
+      _showError('Error al leer el archivo arrastrado: $e');
+    }
+  }
+
+  void _processFile(List<int> bytes, String filename) {
+    setState(() {
+      _selectedFileBytes = bytes;
+      _selectedFileName = filename;
+      _decisiones.clear();
+    });
+
+    if (mounted) {
+      context.read<ExcelBloc>().add(
+            AnalizarImportacionEvent(
+              bytes: bytes,
+              filename: filename,
+            ),
+          );
+    }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red.shade700,
+      ),
+    );
   }
 
   void _setDecisionesTodas(List duplicates, String accion) {
@@ -137,42 +179,83 @@ class _ImportDialogState extends State<ImportDialog> {
                 ),
                 const Divider(height: 24),
                 if (_selectedFileName == null) ...[
-                  // Paso 1: Seleccionar archivo
-                  Center(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade600),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Selecciona el archivo Excel (.xlsx)',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  // Paso 1: Seleccionar o Arrastrar archivo
+                  DropTarget(
+                    onDragEntered: (details) {
+                      setState(() => _isDragging = true);
+                    },
+                    onDragExited: (details) {
+                      setState(() => _isDragging = false);
+                    },
+                    onDragDone: (details) {
+                      setState(() => _isDragging = false);
+                      _handleDroppedFile(details);
+                    },
+                    child: InkWell(
+                      onTap: _pickFile,
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: _isDragging
+                              ? AppColors.primaryBlue.withOpacity(0.08)
+                              : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _isDragging
+                                ? AppColors.primaryBlue
+                                : Colors.grey.shade300,
+                            width: _isDragging ? 2 : 1,
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Debe contener las pestañas BD, ASO, EXP y VOL',
-                            style: TextStyle(fontSize: 12, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.folder_open),
-                            label: const Text('Buscar Archivo'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryBlue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isDragging
+                                  ? Icons.file_download_rounded
+                                  : Icons.cloud_upload_outlined,
+                              size: 52,
+                              color: _isDragging
+                                  ? AppColors.primaryBlue
+                                  : Colors.grey.shade600,
                             ),
-                            onPressed: _pickFile,
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Text(
+                              _isDragging
+                                  ? '¡Suelta tu archivo Excel aquí!'
+                                  : 'Arrastra y suelta tu archivo Excel (.xlsx)',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: _isDragging
+                                    ? AppColors.primaryBlue
+                                    : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Debe contener las pestañas BD, ASO, EXP y VOL',
+                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.folder_open),
+                              label: const Text('Buscar Archivo'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryBlue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onPressed: _pickFile,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
