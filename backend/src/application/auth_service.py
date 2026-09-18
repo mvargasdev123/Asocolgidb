@@ -11,7 +11,7 @@ from infrastructure.email_service import enviar_alerta_seguridad, enviar_token_r
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "un_secreto_super_seguro_para_desarrollo")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 20
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 def _now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)

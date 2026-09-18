@@ -24,3 +24,15 @@ class ForgotPasswordRequested extends AuthEvent {
 class TogglePasswordVisibility extends AuthEvent {
   const TogglePasswordVisibility();
 }
+
+class AutoRefreshTokenRequested extends AuthEvent {
+  const AutoRefreshTokenRequested();
+}
+
+class SessionExpiredByInactivity extends AuthEvent {
+  const SessionExpiredByInactivity();
+}
+
+class LogoutRequested extends AuthEvent {
+  const LogoutRequested();
+}
