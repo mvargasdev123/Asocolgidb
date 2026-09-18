@@ -7,6 +7,7 @@ class CustomDropdownWithOther extends StatefulWidget {
   final List<String> options;
   final String? initialValue;
   final void Function(String) onChanged;
+  final bool enabled;
 
   const CustomDropdownWithOther({
     super.key,
@@ -15,6 +16,7 @@ class CustomDropdownWithOther extends StatefulWidget {
     required this.options,
     required this.onChanged,
     this.initialValue,
+    this.enabled = true,
   });
 
   @override
@@ -58,6 +60,7 @@ class _CustomDropdownWithOtherState extends State<CustomDropdownWithOther> {
           decoration: InputDecoration(
             labelText: widget.label,
             prefixIcon: Icon(widget.icon),
+            enabled: widget.enabled,
           ),
           items: [
             ...widget.options.map(
@@ -68,20 +71,23 @@ class _CustomDropdownWithOtherState extends State<CustomDropdownWithOther> {
               child: Text('Otro (Especificar)'),
             ),
           ],
-          onChanged: (val) {
-            setState(() {
-              _selectedValue = val;
-              _isOther = val == 'Otro';
-            });
-            if (!_isOther && val != null) {
-              widget.onChanged(val);
-            }
-          },
+          onChanged: widget.enabled
+              ? (val) {
+                  setState(() {
+                    _selectedValue = val;
+                    _isOther = val == 'Otro';
+                  });
+                  if (!_isOther && val != null) {
+                    widget.onChanged(val);
+                  }
+                }
+              : null,
         ),
         if (_isOther) ...[
           const SizedBox(height: 8),
           TextFormField(
             controller: _otherController,
+            enabled: widget.enabled,
             decoration: InputDecoration(
               labelText: 'Especifique ${widget.label.toLowerCase()}',
               prefixIcon: const Icon(Icons.edit),

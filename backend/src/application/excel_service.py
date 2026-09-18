@@ -19,6 +19,8 @@ def _clean_val(val: Any) -> Optional[str]:
     val_str = str(val).strip()
     if not val_str or val_str.lower() in ["none", "null", "nan"]:
         return None
+    if val_str.endswith(".0"):
+        val_str = val_str[:-2]
     return val_str
 
 def _format_date_export(d: Any) -> Optional[str]:

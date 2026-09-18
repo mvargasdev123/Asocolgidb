@@ -4,6 +4,7 @@ class MembersListState {
   final MembersListStatus status;
   final List<Map<String, dynamic>> members;
   final bool hasReachedMax;
+  final bool isFetchingMore;
   final String? errorMessage;
   final String searchQuery;
   final String? generoFilter;
@@ -14,6 +15,7 @@ class MembersListState {
     this.status = MembersListStatus.initial,
     this.members = const [],
     this.hasReachedMax = false,
+    this.isFetchingMore = false,
     this.errorMessage,
     this.searchQuery = '',
     this.generoFilter,
@@ -31,6 +33,7 @@ class MembersListState {
     MembersListStatus? status,
     List<Map<String, dynamic>>? members,
     bool? hasReachedMax,
+    bool? isFetchingMore,
     String? errorMessage,
     String? searchQuery,
     String? generoFilter,
@@ -44,6 +47,7 @@ class MembersListState {
       status: status ?? this.status,
       members: members ?? this.members,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       errorMessage: errorMessage ?? this.errorMessage,
       searchQuery: searchQuery ?? this.searchQuery,
       generoFilter: clearGenero ? null : (generoFilter ?? this.generoFilter),
@@ -52,4 +56,3 @@ class MembersListState {
     );
   }
 }
-

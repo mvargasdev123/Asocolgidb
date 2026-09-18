@@ -2,50 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../expedientes/presentation/bloc/expedientes_bloc.dart';
+import '../../../expedientes/presentation/bloc/expedientes_event.dart';
 import '../../domain/models/member_registration_request.dart';
-import '../../domain/repositories/member_repository.dart';
-import '../../data/repositories/member_repository_impl.dart';
 import '../bloc/registration/registration_bloc.dart';
 import '../bloc/registration/registration_event.dart';
 import '../bloc/registration/registration_state.dart';
 import '../bloc/list/members_list_bloc.dart';
 import '../bloc/list/members_list_event.dart';
+import 'comments_section_widget.dart';
 import 'custom_dropdown_with_other.dart';
 import 'section_header.dart';
-import 'comments_section_widget.dart';
-import '../../../expedientes/domain/repositories/expediente_repository.dart';
 
-class RegistrationDrawer extends StatelessWidget {
+class RegistrationDrawer extends StatefulWidget {
   final int? memberId;
+
   const RegistrationDrawer({super.key, this.memberId});
 
   @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      width: 550, // Ligeramente más ancho para la grilla
-      child: BlocProvider<RegistrationBloc>(
-        create: (context) {
-          final bloc = RegistrationBloc(repository: context.read<MemberRepository>());
-          if (memberId != null) {
-            bloc.add(LoadMemberForEdit(memberId!));
-          }
-          return bloc;
-        },
-        child: _RegistrationForm(memberId: memberId),
-      ),
-    );
-  }
+  State<RegistrationDrawer> createState() => _RegistrationDrawerState();
 }
 
-class _RegistrationForm extends StatefulWidget {
-  final int? memberId;
-  const _RegistrationForm({this.memberId});
-
-  @override
-  State<_RegistrationForm> createState() => _RegistrationFormState();
-}
-
-class _RegistrationFormState extends State<_RegistrationForm> {
+class _RegistrationDrawerState extends State<RegistrationDrawer> {
   final _formKey = GlobalKey<FormState>();
   bool _dataLoaded = false;
   bool _isEditing = false;
@@ -105,17 +83,13 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   bool _volCarta = false;
   bool _volFormulario = false;
 
-  String _calcularAntiguedad(String fechaVinculacionStr) {
-    if (fechaVinculacionStr.trim().isEmpty) return 'N/A';
-    final parsed = DateFormatter.parseDate(fechaVinculacionStr);
-    if (parsed == null) return 'N/A';
-    final now = DateTime.now();
-    int years = now.year - parsed.year;
-    if (now.month < parsed.month || (now.month == parsed.month && now.day < parsed.day)) {
-      years--;
+  String _cleanPhone(dynamic val) {
+    if (val == null) return '';
+    String str = val.toString().trim();
+    if (str.endsWith('.0')) {
+      str = str.substring(0, str.length - 2);
     }
-    if (years < 0) years = 0;
-    return years == 1 ? '1 año' : '$years años';
+    return str;
   }
 
   void _populateFromData(Map<String, dynamic> data) {
@@ -126,7 +100,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       _nombreController.text = data['nombre_completo'] ?? '';
       _fechaNacController.text = DateFormatter.displayDate(data['fecha_nacimiento']);
       _fechaAtencionController.text = DateFormatter.displayDate(data['fecha_atencion']);
-      _telefonoPrincipalController.text = data['telefono_principal'] ?? '';
+      _telefonoPrincipalController.text = _cleanPhone(data['telefono_principal']);
 
       // Normalizar Género para evitar errores de DropdownButton
       final g = data['genero'];
@@ -163,7 +137,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       _autorizaImagen = data['autoriza_imagen'] == true;
       _emergenciaNombre.text = data['contacto_emergencia_nombre'] ?? '';
       _emergenciaParentesco.text = data['contacto_emergencia_parentesco'] ?? '';
-      _emergenciaTelefono.text = data['contacto_emergencia_telefono'] ?? '';
+      _emergenciaTelefono.text = _cleanPhone(data['contacto_emergencia_telefono']);
 
       if (data['datos_asociado'] is Map) {
         final da = data['datos_asociado'] as Map<String, dynamic>;
@@ -202,7 +176,6 @@ class _RegistrationFormState extends State<_RegistrationForm> {
 
   @override
   void dispose() {
-
     _numIdentController.dispose();
     _nombreController.dispose();
     _fechaNacController.dispose();
@@ -232,6 +205,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     BuildContext context,
     TextEditingController controller,
   ) async {
+    if (!_isEditing) return;
     final DateTime initial = DateFormatter.parseDate(controller.text) ?? DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -241,7 +215,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = DateFormatter.formatMMDDYYYY(picked);
+        controller.text = DateFormatter.formatDDMMYYYY(picked);
       });
     }
   }
@@ -307,7 +281,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
               ? _emergenciaParentesco.text
               : null,
           telefono: _emergenciaTelefono.text.isNotEmpty
-              ? _emergenciaTelefono.text
+              ? _emergenciaTelefono.text.trim()
               : null,
         ),
         esAsociado: state.isAsociado,
@@ -326,7 +300,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         datosVoluntario: state.isVoluntario
             ? DatosVoluntario(
                 cargo: _volCargo.text.isNotEmpty ? _volCargo.text : null,
-                campoAccion: _volCampo.text.isNotEmpty ? _volCampo.text : null,
+                campoAccion:
+                    _volCampo.text.isNotEmpty ? _volCampo.text : null,
                 tipo: _volTipo.text.isNotEmpty ? _volTipo.text : null,
                 horasSemana: int.tryParse(_volHoras.text),
                 urlDoc: _volUrlDoc.text.isNotEmpty ? _volUrlDoc.text : null,
@@ -342,7 +317,10 @@ class _RegistrationFormState extends State<_RegistrationForm> {
 
       if (widget.memberId != null) {
         context.read<RegistrationBloc>().add(
-              UpdateRegistration(widget.memberId!, request),
+              UpdateRegistration(
+                widget.memberId!,
+                request,
+              ),
             );
       } else {
         context.read<RegistrationBloc>().add(SubmitRegistration(request));
@@ -350,26 +328,28 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     }
   }
 
-  void _confirmDelete(BuildContext mainContext) {
+  void _confirmDelete(BuildContext context) {
     showDialog(
-      context: mainContext,
-      builder: (dialogCtx) => AlertDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
         title: const Text('Confirmar Eliminación'),
         content: const Text(
-          '¿Estás seguro de que deseas eliminar este miembro? Esta acción realizará un borrado lógico y el usuario ya no aparecerá en el listado activo.',
+          '¿Estás seguro de que deseas eliminar a esta persona de la base de datos?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorRed),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              Navigator.pop(dialogCtx);
-              mainContext.read<RegistrationBloc>().add(
-                    DeleteMemberRequested(widget.memberId!),
-                  );
+              Navigator.pop(ctx);
+              if (widget.memberId != null) {
+                context.read<RegistrationBloc>().add(
+                      DeleteMemberRequested(widget.memberId!),
+                    );
+              }
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
           ),
@@ -379,23 +359,21 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   }
 
   void _showGenerarExpedienteDialog(BuildContext context) {
-    final numExpAsignadoCtrl = TextEditingController();
+    if (widget.memberId == null) return;
     final tramiteCtrl = TextEditingController();
     final repLegalCtrl = TextEditingController();
     final consultorioCtrl = TextEditingController();
-    final fechaPresCtrl = TextEditingController();
-    final fechaResCtrl = TextEditingController();
-
-    final now = DateTime.now();
-    fechaPresCtrl.text = DateFormatter.formatMMDDYYYY(now);
-
+    final numExpAsignadoCtrl = TextEditingController();
+    final fechaPresCtrl = TextEditingController(
+      text: DateFormatter.formatDDMMYYYY(DateTime.now()),
+    );
     String aporteSocial = 'Sí';
     bool solicitanteExtranjeria = false;
     bool antecedentesApostillados = false;
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => StatefulBuilder(
+      builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
@@ -494,36 +472,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           );
                           if (picked != null) {
                             setDialogState(() {
-                              fechaPresCtrl.text = DateFormatter.formatMMDDYYYY(picked);
+                              fechaPresCtrl.text = DateFormatter.formatDDMMYYYY(picked);
                             });
                           }
                         },
                         child: Text(fechaPresCtrl.text),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text('Fecha Resolución: ',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      TextButton(
-                        onPressed: () async {
-                          DateTime initial =
-                              DateFormatter.parseDate(fechaResCtrl.text) ?? DateTime.now();
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: initial,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setDialogState(() {
-                              fechaResCtrl.text = DateFormatter.formatMMDDYYYY(picked);
-                            });
-                          }
-                        },
-                        child: Text(
-                            fechaResCtrl.text.isNotEmpty ? fechaResCtrl.text : 'Opcional'),
                       ),
                     ],
                   ),
@@ -532,73 +485,42 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.pop(dialogCtx),
+                        onPressed: () => Navigator.pop(ctx),
                         child: const Text('Cancelar'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0D47A1),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
                         ),
-                        onPressed: () async {
-                          final tramite = tramiteCtrl.text.trim();
-                          final repLegal = repLegalCtrl.text.trim();
-                          if (tramite.isEmpty) {
+                        onPressed: () {
+                          if (tramiteCtrl.text.trim().isEmpty ||
+                              repLegalCtrl.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text('Por favor ingresa el tipo de trámite')),
+                                content: Text('Complete Tipo Trámite y Representante Legal'),
+                                backgroundColor: Colors.red,
+                              ),
                             );
                             return;
                           }
-                          Navigator.pop(dialogCtx);
-                          try {
-                            final repo = context.read<ExpedienteRepository>();
-                            final exp = await repo.createExpediente(
-                              idPersona: widget.memberId!,
-                              tipoTramite: tramite,
-                              fechaPresentacion: fechaPresCtrl.text,
-                              numeroExpedienteAsignado:
-                                  numExpAsignadoCtrl.text.trim().isNotEmpty
-                                      ? numExpAsignadoCtrl.text.trim()
-                                      : null,
-                              representanteLegal:
-                                  repLegal.isNotEmpty ? repLegal : null,
-                              consultorioJuridico:
-                                  consultorioCtrl.text.trim().isNotEmpty
-                                      ? consultorioCtrl.text.trim()
-                                      : null,
-                              aporteSocial: aporteSocial,
-                              solicitanteExtranjeria: solicitanteExtranjeria,
-                              antecedentesTraducidosYApostillados:
-                                  antecedentesApostillados,
-                              fechaResolucion: fechaResCtrl.text.isNotEmpty
-                                  ? fechaResCtrl.text
-                                  : null,
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Expediente ${exp.numeroRegistro} generado con éxito'),
-                                  backgroundColor: Colors.green,
+
+                          context.read<ExpedientesBloc>().add(
+                                CreateExpedienteEvent(
+                                  idPersona: widget.memberId!,
+                                  tipoTramite: tramiteCtrl.text.trim(),
+                                  fechaPresentacion: fechaPresCtrl.text.isNotEmpty
+                                      ? fechaPresCtrl.text
+                                      : DateFormatter.formatDDMMYYYY(DateTime.now()),
                                 ),
                               );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text(e.toString().replaceAll('Exception: ', '')),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Generando Expediente...'),
+                              backgroundColor: Colors.blue,
+                            ),
+                          );
                         },
                         child: const Text('Guardar',
                             style: TextStyle(
@@ -615,9 +537,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
   }
 
-
   @override
-
   Widget build(BuildContext context) {
     return BlocListener<RegistrationBloc, RegistrationState>(
       listener: (context, state) {
@@ -647,7 +567,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
             ),
           );
           // Refrescar la lista de miembros en tiempo real
-          context.read<MembersListBloc>().add(LoadInitialMembers());
+          context.read<MembersListBloc>().add(RefreshMembers());
           Navigator.pop(context);
         } else if (state.status == RegistrationStatus.deleteSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -657,7 +577,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
             ),
           );
           // Refrescar la lista de miembros en tiempo real
-          context.read<MembersListBloc>().add(LoadInitialMembers());
+          context.read<MembersListBloc>().add(RefreshMembers());
           Navigator.pop(context);
         } else if (state.status == RegistrationStatus.failureGeneric) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -716,21 +636,6 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       ],
                     ),
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.folder_open, size: 16, color: Colors.white),
-                    label: const Text(
-                      'Generar Expediente',
-                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    onPressed: () => _showGenerarExpedienteDialog(context),
-                  ),
-                  const SizedBox(width: 8),
                   IconButton(
                     icon: Icon(
                       _isEditing ? Icons.edit_off : Icons.edit,
@@ -765,7 +670,6 @@ class _RegistrationFormState extends State<_RegistrationForm> {
             ),
           ),
 
-
           // Formulario
           Expanded(
             child: Form(
@@ -788,6 +692,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                             icon: Icons.badge_outlined,
                             options: const ['NIF/NIE', 'Pasaporte'],
                             initialValue: _tipoDoc,
+                            enabled: _isEditing,
                             onChanged: (val) => _tipoDoc = val,
                           ),
                         ),
@@ -796,6 +701,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           flex: 2,
                           child: TextFormField(
                             controller: _numIdentController,
+                            enabled: _isEditing,
                             decoration: const InputDecoration(
                               labelText: 'Número Identificación *',
                               prefixIcon: Icon(Icons.tag),
@@ -818,6 +724,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         'Venezuela',
                       ],
                       initialValue: _nacionalidad,
+                      enabled: _isEditing,
                       onChanged: (val) => _nacionalidad = val,
                     ),
 
@@ -828,6 +735,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     TextFormField(
                       controller: _nombreController,
+                      enabled: _isEditing,
                       decoration: const InputDecoration(
                         labelText: 'Nombre Completo *',
                         prefixIcon: Icon(Icons.person_outline),
@@ -842,6 +750,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           child: TextFormField(
                             controller: _fechaNacController,
                             readOnly: true,
+                            enabled: _isEditing,
                             decoration: const InputDecoration(
                               labelText: 'Fecha Nacimiento (Opcional)',
                               prefixIcon: Icon(Icons.calendar_today),
@@ -855,6 +764,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           child: TextFormField(
                             controller: _fechaAtencionController,
                             readOnly: true,
+                            enabled: _isEditing,
                             decoration: const InputDecoration(
                               labelText: 'Fecha de Atención (Opcional)',
                               prefixIcon: Icon(Icons.event_available),
@@ -871,6 +781,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         Expanded(
                           child: TextFormField(
                             controller: _telefonoPrincipalController,
+                            enabled: _isEditing,
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
                               labelText: 'Teléfono Principal (Opcional)',
@@ -894,7 +805,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                 child: Text('LGTBI'),
                               ),
                             ],
-                            onChanged: (val) => setState(() => _genero = val!),
+                            onChanged: _isEditing
+                                ? (val) => setState(() => _genero = val!)
+                                : null,
                           ),
                         ),
                       ],
@@ -902,6 +815,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _correoController,
+                      enabled: _isEditing,
                       decoration: const InputDecoration(
                         labelText: 'Correo Electrónico',
                         prefixIcon: Icon(Icons.email),
@@ -926,6 +840,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                               'En tramite',
                             ],
                             initialValue: _sitAdmin,
+                            enabled: _isEditing,
                             onChanged: (val) => _sitAdmin = val,
                           ),
                         ),
@@ -933,6 +848,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         Expanded(
                           child: TextFormField(
                             controller: _unidadFamiliarController,
+                            enabled: _isEditing,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Unidad Familiar',
@@ -959,8 +875,10 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   ),
                                 )
                                 .toList(),
-                            onChanged: (val) =>
-                                setState(() => _madreSoltera = val!),
+                            onChanged: _isEditing
+                                ? (val) =>
+                                    setState(() => _madreSoltera = val!)
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -978,8 +896,10 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   ),
                                 )
                                 .toList(),
-                            onChanged: (val) =>
-                                setState(() => _violenciaGenero = val!),
+                            onChanged: _isEditing
+                                ? (val) =>
+                                    setState(() => _violenciaGenero = val!)
+                                : null,
                           ),
                         ),
                       ],
@@ -995,6 +915,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         'Universidad',
                       ],
                       initialValue: _nivelEducativo,
+                      enabled: _isEditing,
                       onChanged: (val) => _nivelEducativo = val,
                     ),
 
@@ -1007,12 +928,14 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       title: const Text('¿Tiene Padrón?'),
                       value: _tienePadron,
                       activeColor: AppColors.primaryBlue,
-                      onChanged: (val) {
-                        setState(() {
-                          _tienePadron = val;
-                          if (!val) _fechaPadronController.clear();
-                        });
-                      },
+                      onChanged: _isEditing
+                          ? (val) {
+                              setState(() {
+                                _tienePadron = val;
+                                if (!val) _fechaPadronController.clear();
+                              });
+                            }
+                          : null,
                     ),
                     if (_tienePadron)
                       Padding(
@@ -1020,6 +943,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         child: TextFormField(
                           controller: _fechaPadronController,
                           readOnly: true,
+                          enabled: _isEditing,
                           decoration: const InputDecoration(
                             labelText: 'Fecha de Padrón',
                             prefixIcon: Icon(Icons.date_range),
@@ -1034,6 +958,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       icon: Icons.question_answer,
                       options: const [],
                       initialValue: _motivoConsulta,
+                      enabled: _isEditing,
                       onChanged: (val) => _motivoConsulta = val,
                     ),
                     const SizedBox(height: 16),
@@ -1046,6 +971,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                             icon: Icons.alt_route,
                             options: const [],
                             initialValue: _derivacion,
+                            enabled: _isEditing,
                             onChanged: (val) => _derivacion = val,
                           ),
                         ),
@@ -1056,6 +982,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                             icon: Icons.psychology,
                             options: const [],
                             initialValue: _tecnicaAcogida,
+                            enabled: _isEditing,
                             onChanged: (val) => _tecnicaAcogida = val,
                           ),
                         ),
@@ -1069,6 +996,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     TextFormField(
                       controller: _emergenciaNombre,
+                      enabled: _isEditing,
                       decoration: const InputDecoration(
                         labelText: 'Nombre del Contacto',
                         prefixIcon: Icon(Icons.person),
@@ -1080,6 +1008,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         Expanded(
                           child: TextFormField(
                             controller: _emergenciaParentesco,
+                            enabled: _isEditing,
                             decoration: const InputDecoration(
                               labelText: 'Parentesco',
                               prefixIcon: Icon(Icons.family_restroom),
@@ -1090,6 +1019,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         Expanded(
                           child: TextFormField(
                             controller: _emergenciaTelefono,
+                            enabled: _isEditing,
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
                               labelText: 'Teléfono',
@@ -1130,9 +1060,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                       ),
                                     ),
                                     value: state.isAsociado,
-                                    onChanged: (val) => context
-                                        .read<RegistrationBloc>()
-                                        .add(ToggleAsociado(val ?? false)),
+                                    onChanged: _isEditing
+                                        ? (val) => context
+                                            .read<RegistrationBloc>()
+                                            .add(ToggleAsociado(val ?? false))
+                                        : null,
                                     activeColor: AppColors.primaryBlue,
                                   ),
                                   if (state.isAsociado) ...[
@@ -1140,54 +1072,47 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child:
-                                              DropdownButtonFormField<String>(
-                                                value: _estadoMembresia,
-                                                decoration:
-                                                    const InputDecoration(
-                                                      labelText:
-                                                          'Estado Membresía',
-                                                    ),
-                                                items:
-                                                    [
-                                                          'Activo',
-                                                          'Inactivo',
-                                                          'Renovado',
-                                                        ]
-                                                        .map(
-                                                          (e) =>
-                                                              DropdownMenuItem(
-                                                                value: e,
-                                                                child: Text(e),
-                                                              ),
-                                                        )
-                                                        .toList(),
-                                                onChanged: (val) => setState(
-                                                  () => _estadoMembresia = val!,
-                                                ),
-                                              ),
+                                          child: DropdownButtonFormField<String>(
+                                            value: _estadoMembresia,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Estado Membresía',
+                                            ),
+                                            items: ['Activo', 'Inactivo', 'Renovado']
+                                                .map(
+                                                  (e) => DropdownMenuItem(
+                                                    value: e,
+                                                    child: Text(e),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: _isEditing
+                                                ? (val) => setState(
+                                                    () => _estadoMembresia = val!,
+                                                  )
+                                                : null,
+                                          ),
                                         ),
                                         const SizedBox(width: 16),
                                         Expanded(
-                                          child:
-                                              DropdownButtonFormField<String>(
-                                                value: _estadoPago,
-                                                decoration:
-                                                    const InputDecoration(
-                                                      labelText: 'Estado Pago',
-                                                    ),
-                                                items: ['Al día', 'Moroso']
-                                                    .map(
-                                                      (e) => DropdownMenuItem(
-                                                        value: e,
-                                                        child: Text(e),
-                                                      ),
-                                                    )
-                                                    .toList(),
-                                                onChanged: (val) => setState(
-                                                  () => _estadoPago = val!,
-                                                ),
-                                              ),
+                                          child: DropdownButtonFormField<String>(
+                                            value: _estadoPago,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Estado Pago',
+                                            ),
+                                            items: ['Al día', 'Moroso']
+                                                .map(
+                                                  (e) => DropdownMenuItem(
+                                                    value: e,
+                                                    child: Text(e),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: _isEditing
+                                                ? (val) => setState(
+                                                    () => _estadoPago = val!,
+                                                  )
+                                                : null,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1205,7 +1130,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                             ),
                                           )
                                           .toList(),
-                                      onChanged: (val) => _metodoPago = val!,
+                                      onChanged: _isEditing
+                                          ? (val) => _metodoPago = val!
+                                          : null,
                                     ),
                                     SwitchListTile(
                                       contentPadding: EdgeInsets.zero,
@@ -1214,10 +1141,33 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                       ),
                                       value: _autorizaWhatsapp,
                                       activeColor: AppColors.primaryBlue,
-                                      onChanged: (val) => setState(
-                                        () => _autorizaWhatsapp = val,
-                                      ),
+                                      onChanged: _isEditing
+                                          ? (val) => setState(
+                                                () => _autorizaWhatsapp = val,
+                                              )
+                                          : null,
                                     ),
+                                    if (widget.memberId != null) ...[
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          icon: const Icon(Icons.folder_open, size: 18),
+                                          label: const Text('Generar Expediente'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF0D47A1),
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            _showGenerarExpedienteDialog(context);
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ],
                               ),
@@ -1248,9 +1198,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                       ),
                                     ),
                                     value: state.isVoluntario,
-                                    onChanged: (val) => context
-                                        .read<RegistrationBloc>()
-                                        .add(ToggleVoluntario(val ?? false)),
+                                    onChanged: _isEditing
+                                        ? (val) => context
+                                            .read<RegistrationBloc>()
+                                            .add(ToggleVoluntario(val ?? false))
+                                        : null,
                                     activeColor: AppColors.primaryYellow,
                                   ),
                                   if (state.isVoluntario) ...[
@@ -1260,6 +1212,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: _volCargo,
+                                            enabled: _isEditing,
                                             decoration: const InputDecoration(
                                               labelText: 'Cargo',
                                               prefixIcon: Icon(
@@ -1272,6 +1225,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: _volCampo,
+                                            enabled: _isEditing,
                                             decoration: const InputDecoration(
                                               labelText: 'Campo de Acción',
                                               prefixIcon: Icon(
@@ -1289,6 +1243,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                           flex: 2,
                                           child: TextFormField(
                                             controller: _volTipo,
+                                            enabled: _isEditing,
                                             decoration: const InputDecoration(
                                               labelText: 'Tipo (Opcional)',
                                               prefixIcon: Icon(
@@ -1301,6 +1256,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: _volHoras,
+                                            enabled: _isEditing,
                                             keyboardType: TextInputType.number,
                                             decoration: const InputDecoration(
                                               labelText: 'Horas / Semana',
@@ -1316,6 +1272,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: _volUrlDoc,
+                                            enabled: _isEditing,
                                             decoration: const InputDecoration(
                                               labelText: 'URL Doc (Opcional)',
                                               prefixIcon: Icon(Icons.link),
@@ -1326,6 +1283,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: _volUrlCv,
+                                            enabled: _isEditing,
                                             decoration: const InputDecoration(
                                               labelText: 'URL CV (Opcional)',
                                               prefixIcon: Icon(Icons.link),
@@ -1343,8 +1301,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                       value: _volCarta,
                                       controlAffinity:
                                           ListTileControlAffinity.leading,
-                                      onChanged: (val) =>
-                                          setState(() => _volCarta = val!),
+                                      onChanged: _isEditing
+                                          ? (val) => setState(() => _volCarta = val!)
+                                          : null,
                                     ),
                                     CheckboxListTile(
                                       contentPadding: EdgeInsets.zero,
@@ -1354,32 +1313,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                       value: _volFormulario,
                                       controlAffinity:
                                           ListTileControlAffinity.leading,
-                                      onChanged: (val) =>
-                                          setState(() => _volFormulario = val!),
-                                    ),
-                                  ],
-                                  if (widget.memberId != null) ...[
-                                    const SizedBox(height: 16),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.folder_open, size: 18),
-                                        label: const Text('Generar Expediente'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF0D47A1),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          if (!state.isVoluntario) {
-                                            context.read<RegistrationBloc>().add(const ToggleVoluntario(true));
-                                          }
-                                          _showGenerarExpedienteDialog(context);
-                                        },
-                                      ),
+                                      onChanged: _isEditing
+                                          ? (val) => setState(() => _volFormulario = val!)
+                                          : null,
                                     ),
                                   ],
                                 ],
@@ -1463,4 +1399,3 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
   }
 }
-

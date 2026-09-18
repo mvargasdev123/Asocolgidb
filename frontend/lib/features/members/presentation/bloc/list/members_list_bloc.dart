@@ -22,7 +22,7 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
     Emitter<MembersListState> emit,
   ) async {
     if (state.status == MembersListStatus.loading) return;
-    emit(state.copyWith(status: MembersListStatus.loading));
+    emit(state.copyWith(status: MembersListStatus.loading, isFetchingMore: false));
     try {
       final members = await _memberRepository.getMembers(
         limit: _limit,
@@ -35,11 +35,13 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
         status: MembersListStatus.success,
         members: members,
         hasReachedMax: members.length < _limit,
+        isFetchingMore: false,
       ));
     } catch (e) {
       emit(state.copyWith(
         status: MembersListStatus.failure,
         errorMessage: e.toString(),
+        isFetchingMore: false,
       ));
     }
   }
@@ -48,12 +50,20 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
     LoadMoreMembers event,
     Emitter<MembersListState> emit,
   ) async {
-    if (state.hasReachedMax || state.status != MembersListStatus.success) return;
+    if (state.hasReachedMax || state.isFetchingMore || state.status != MembersListStatus.success) return;
+
+    emit(state.copyWith(isFetchingMore: true));
 
     try {
-      if (state.members.isEmpty) return;
+      if (state.members.isEmpty) {
+        emit(state.copyWith(isFetchingMore: false));
+        return;
+      }
       final lastId = state.members.last['id'] as int?;
-      if (lastId == null) return;
+      if (lastId == null) {
+        emit(state.copyWith(isFetchingMore: false));
+        return;
+      }
 
       final moreMembers = await _memberRepository.getMembers(
         lastId: lastId,
@@ -65,18 +75,20 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
       );
       
       if (moreMembers.isEmpty) {
-        emit(state.copyWith(hasReachedMax: true));
+        emit(state.copyWith(hasReachedMax: true, isFetchingMore: false));
       } else {
         emit(state.copyWith(
           status: MembersListStatus.success,
           members: List.of(state.members)..addAll(moreMembers),
           hasReachedMax: moreMembers.length < _limit,
+          isFetchingMore: false,
         ));
       }
     } catch (e) {
       emit(state.copyWith(
         status: MembersListStatus.failure,
         errorMessage: e.toString(),
+        isFetchingMore: false,
       ));
     }
   }
@@ -85,7 +97,7 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
     RefreshMembers event,
     Emitter<MembersListState> emit,
   ) async {
-    emit(state.copyWith(status: MembersListStatus.loading, hasReachedMax: false, members: []));
+    emit(state.copyWith(status: MembersListStatus.loading, hasReachedMax: false, isFetchingMore: false, members: []));
     try {
       final members = await _memberRepository.getMembers(
         limit: _limit,
@@ -98,11 +110,13 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
         status: MembersListStatus.success,
         members: members,
         hasReachedMax: members.length < _limit,
+        isFetchingMore: false,
       ));
     } catch (e) {
       emit(state.copyWith(
         status: MembersListStatus.failure,
         errorMessage: e.toString(),
+        isFetchingMore: false,
       ));
     }
   }
@@ -125,6 +139,7 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
       status: MembersListStatus.loading,
       members: [],
       hasReachedMax: false,
+      isFetchingMore: false,
       searchQuery: newQuery,
       generoFilter: newGenero,
       clearGenero: clearGenero,
@@ -146,11 +161,13 @@ class MembersListBloc extends Bloc<MembersListEvent, MembersListState> {
         status: MembersListStatus.success,
         members: members,
         hasReachedMax: members.length < _limit,
+        isFetchingMore: false,
       ));
     } catch (e) {
       emit(state.copyWith(
         status: MembersListStatus.failure,
         errorMessage: e.toString(),
+        isFetchingMore: false,
       ));
     }
   }

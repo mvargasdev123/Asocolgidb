@@ -444,11 +444,24 @@ class _DashboardPageState extends State<DashboardPage> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: state.hasReachedMax
-          ? state.members.length
-          : state.members.length + 1,
+      itemCount: state.members.length + 1,
       itemBuilder: (context, index) {
         if (index >= state.members.length) {
+          if (state.hasReachedMax) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Ya no hay más personas',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            );
+          }
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
