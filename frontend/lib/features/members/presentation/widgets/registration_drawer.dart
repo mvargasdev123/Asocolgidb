@@ -1147,27 +1147,25 @@ class _RegistrationDrawerState extends State<RegistrationDrawer> {
                                               )
                                           : null,
                                     ),
-                                    if (widget.memberId != null) ...[
-                                      const SizedBox(height: 16),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(Icons.folder_open, size: 18),
-                                          label: const Text('Generar Expediente'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF0D47A1),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.folder_open, size: 18),
+                                        label: const Text('Generar Expediente'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF0D47A1),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
-                                          onPressed: () {
-                                            _showGenerarExpedienteDialog(context);
-                                          },
                                         ),
+                                        onPressed: () {
+                                          _showGenerarExpedienteDialog(context);
+                                        },
                                       ),
-                                    ],
+                                    ),
                                   ],
                                 ],
                               ),
