@@ -172,6 +172,26 @@ class _RegistrationDrawerState extends State<RegistrationDrawer> {
   void initState() {
     super.initState();
     _isEditing = widget.memberId == null;
+    _dataLoaded = false;
+    if (widget.memberId != null) {
+      context.read<RegistrationBloc>().add(LoadMemberForEdit(widget.memberId!));
+    } else {
+      context.read<RegistrationBloc>().add(ResetRegistration());
+    }
+  }
+
+  @override
+  void didUpdateWidget(RegistrationDrawer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.memberId != widget.memberId) {
+      _dataLoaded = false;
+      _isEditing = widget.memberId == null;
+      if (widget.memberId != null) {
+        context.read<RegistrationBloc>().add(LoadMemberForEdit(widget.memberId!));
+      } else {
+        context.read<RegistrationBloc>().add(ResetRegistration());
+      }
+    }
   }
 
   @override

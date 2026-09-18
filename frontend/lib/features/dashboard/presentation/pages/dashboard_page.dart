@@ -258,7 +258,10 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: RegistrationDrawer(memberId: _selectedMemberId),
+      endDrawer: RegistrationDrawer(
+        key: ValueKey(_selectedMemberId),
+        memberId: _selectedMemberId,
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
