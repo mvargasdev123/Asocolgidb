@@ -17,6 +17,7 @@ import 'features/members/data/repositories/comentario_repository_impl.dart';
 import 'features/members/domain/repositories/comentario_repository.dart';
 import 'features/members/presentation/bloc/list/members_list_bloc.dart';
 import 'features/members/presentation/bloc/list/members_list_event.dart';
+import 'features/members/presentation/bloc/registration/registration_bloc.dart';
 import 'features/expedientes/data/repositories/expediente_repository_impl.dart';
 import 'features/expedientes/domain/repositories/expediente_repository.dart';
 import 'features/expedientes/presentation/bloc/expedientes_bloc.dart';
@@ -162,6 +163,11 @@ class _AsocolgiAppState extends State<AsocolgiApp> {
             create: (context) => MembersListBloc(
               memberRepository: context.read<MemberRepository>(),
             )..add(LoadInitialMembers()),
+          ),
+          BlocProvider(
+            create: (context) => RegistrationBloc(
+              repository: context.read<MemberRepository>(),
+            ),
           ),
           BlocProvider(
             create: (context) => ExpedientesBloc(
