@@ -144,7 +144,9 @@ class _RegistrationDrawerState extends State<RegistrationDrawer> {
         final mp = da['metodo_pago'];
         if (['Efectivo', 'Transferencia'].contains(mp)) _metodoPago = mp;
         final em = da['estado_membresia'];
-        if (['Activo', 'Inactivo', 'Renovado'].contains(em)) _estadoMembresia = em;
+        if (['Activo', 'Inactivo', 'Renovado'].contains(em)) {
+          _estadoMembresia = (em == 'Inactivo') ? 'Activo' : em;
+        }
         final ep = da['estado_pago'];
         if (['Al día', 'Moroso'].contains(ep)) _estadoPago = ep;
         _autorizaWhatsapp = da['autoriza_whatsapp'] == true;
@@ -308,7 +310,7 @@ class _RegistrationDrawerState extends State<RegistrationDrawer> {
         datosAsociado: state.isAsociado
             ? DatosAsociado(
                 metodoPago: _metodoPago,
-                estadoMembresia: _estadoMembresia,
+                estadoMembresia: _estadoMembresia == 'Inactivo' ? 'Activo' : _estadoMembresia,
                 estadoPago: _estadoPago,
                 autorizaWhatsapp: _autorizaWhatsapp,
                 fechaVinculacion: _asoFechaVinculacionCtrl.text.isNotEmpty
@@ -559,860 +561,867 @@ class _RegistrationDrawerState extends State<RegistrationDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<RegistrationBloc, RegistrationState>(
-      listener: (context, state) {
-        if (state.status == RegistrationStatus.editLoaded && state.memberData != null) {
-          _populateFromData(state.memberData!);
-        } else if (state.status == RegistrationStatus.failureConflict) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Conflicto'),
-              content: Text(state.errorMessage ?? 'Esta persona ya existe'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cerrar'),
+    return Drawer(
+      width: 540,
+      elevation: 8,
+      child: Material(
+        color: Colors.white,
+        child: BlocListener<RegistrationBloc, RegistrationState>(
+          listener: (context, state) {
+            if (state.status == RegistrationStatus.editLoaded && state.memberData != null) {
+              _populateFromData(state.memberData!);
+            } else if (state.status == RegistrationStatus.failureConflict) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Conflicto'),
+                  content: Text(state.errorMessage ?? 'Esta persona ya existe'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        } else if (state.status == RegistrationStatus.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(widget.memberId != null
-                  ? 'Miembro actualizado correctamente'
-                  : 'Registro Exitoso'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // Refrescar la lista de miembros en tiempo real
-          context.read<MembersListBloc>().add(RefreshMembers());
-          Navigator.pop(context);
-        } else if (state.status == RegistrationStatus.deleteSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Miembro eliminado exitosamente'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          // Refrescar la lista de miembros en tiempo real
-          context.read<MembersListBloc>().add(RefreshMembers());
-          Navigator.pop(context);
-        } else if (state.status == RegistrationStatus.failureGeneric) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.errorMessage}'),
-              backgroundColor: AppColors.errorRed,
-            ),
-          );
-        }
-      },
-      child: Column(
-        children: [
-          // Header Azul
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            color: AppColors.primaryBlue,
-            child: Row(
-              children: [
-                if (widget.memberId != null) ...[
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.white,
-                    child: Text(
-                      (_nombreController.text.isNotEmpty ? _nombreController.text[0] : 'P').toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlue,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _nombreController.text.isNotEmpty ? _nombreController.text : 'Detalles de Miembro',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          _correoController.text.isNotEmpty ? _correoController.text : 'Sin correo registrado',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _isEditing ? Icons.edit_off : Icons.edit,
-                      color: Colors.white,
-                    ),
-                    tooltip: _isEditing ? 'Modo Lectura' : 'Modo Edición',
-                    onPressed: () {
-                      setState(() {
-                        _isEditing = !_isEditing;
-                      });
-                    },
-                  ),
-                ] else ...[
-                  const Icon(Icons.person_add, color: Colors.white),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Nuevo Registro Principal',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+              );
+            } else if (state.status == RegistrationStatus.success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(widget.memberId != null
+                      ? 'Miembro actualizado correctamente'
+                      : 'Registro Exitoso'),
+                  backgroundColor: Colors.green,
                 ),
-              ],
-            ),
-          ),
-
-          // Formulario
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              );
+              // Refrescar la lista de miembros en tiempo real
+              context.read<MembersListBloc>().add(RefreshMembers());
+              Navigator.pop(context);
+            } else if (state.status == RegistrationStatus.deleteSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Miembro eliminado exitosamente'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              // Refrescar la lista de miembros en tiempo real
+              context.read<MembersListBloc>().add(RefreshMembers());
+              Navigator.pop(context);
+            } else if (state.status == RegistrationStatus.failureGeneric) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${state.errorMessage}'),
+                  backgroundColor: AppColors.errorRed,
+                ),
+              );
+            }
+          },
+          child: Column(
+            children: [
+              // Header Azul
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                color: AppColors.primaryBlue,
+                child: Row(
                   children: [
-                    // 1. IDENTIFICACIÓN
-                    const SectionHeader(
-                      title: '1. IDENTIFICACIÓN',
-                      icon: Icons.badge,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomDropdownWithOther(
-                            label: 'Tipo Doc',
-                            icon: Icons.badge_outlined,
-                            options: const ['NIF/NIE', 'Pasaporte'],
-                            initialValue: _tipoDoc,
-                            enabled: _isEditing,
-                            onChanged: (val) => _tipoDoc = val,
+                    if (widget.memberId != null) ...[
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Colors.white,
+                        child: Text(
+                          (_nombreController.text.isNotEmpty ? _nombreController.text[0] : 'P').toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryBlue,
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: TextFormField(
-                            controller: _numIdentController,
-                            enabled: _isEditing,
-                            decoration: const InputDecoration(
-                              labelText: 'Número Identificación *',
-                              prefixIcon: Icon(Icons.tag),
-                            ),
-                            validator: (val) =>
-                                val == null || val.isEmpty ? 'Requerido' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    CustomDropdownWithOther(
-                      label: 'Nacionalidad',
-                      icon: Icons.flag,
-                      options: const [
-                        'España',
-                        'Colombia',
-                        'Ecuador',
-                        'Perú',
-                        'Venezuela',
-                      ],
-                      initialValue: _nacionalidad,
-                      enabled: _isEditing,
-                      onChanged: (val) => _nacionalidad = val,
-                    ),
-
-                    // 2. DATOS PERSONALES
-                    const SectionHeader(
-                      title: '2. DATOS PERSONALES',
-                      icon: Icons.person,
-                    ),
-                    TextFormField(
-                      controller: _nombreController,
-                      enabled: _isEditing,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre Completo *',
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                      validator: (val) =>
-                          val == null || val.isEmpty ? 'Requerido' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _fechaNacController,
-                            readOnly: true,
-                            enabled: _isEditing,
-                            decoration: const InputDecoration(
-                              labelText: 'Fecha Nacimiento (Opcional)',
-                              prefixIcon: Icon(Icons.calendar_today),
-                            ),
-                            onTap: () =>
-                                _selectDate(context, _fechaNacController),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _fechaAtencionController,
-                            readOnly: true,
-                            enabled: _isEditing,
-                            decoration: const InputDecoration(
-                              labelText: 'Fecha de Atención (Opcional)',
-                              prefixIcon: Icon(Icons.event_available),
-                            ),
-                            onTap: () =>
-                                _selectDate(context, _fechaAtencionController),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _telefonoPrincipalController,
-                            enabled: _isEditing,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Teléfono Principal (Opcional)',
-                              prefixIcon: Icon(Icons.phone),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _genero,
-                            decoration: const InputDecoration(
-                              labelText: 'Género',
-                              prefixIcon: Icon(Icons.wc),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'M', child: Text('M')),
-                              DropdownMenuItem(value: 'H', child: Text('H')),
-                              DropdownMenuItem(
-                                value: 'LGTBI',
-                                child: Text('LGTBI'),
-                              ),
-                            ],
-                            onChanged: _isEditing
-                                ? (val) => setState(() => _genero = val!)
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _correoController,
-                      enabled: _isEditing,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo Electrónico',
-                        prefixIcon: Icon(Icons.email),
-                      ),
-                    ),
-
-                    // 3. SITUACIÓN SOCIAL
-                    const SectionHeader(
-                      title: '3. SITUACIÓN SOCIAL',
-                      icon: Icons.family_restroom,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: CustomDropdownWithOther(
-                            label: 'Situación Administrativa',
-                            icon: Icons.gavel,
-                            options: const [
-                              'Regular',
-                              'Irregular',
-                              'En tramite',
-                            ],
-                            initialValue: _sitAdmin,
-                            enabled: _isEditing,
-                            onChanged: (val) => _sitAdmin = val,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _unidadFamiliarController,
-                            enabled: _isEditing,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Unidad Familiar',
-                              prefixIcon: Icon(Icons.group),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _madreSoltera,
-                            decoration: const InputDecoration(
-                              labelText: 'Madre Soltera',
-                            ),
-                            items: ['Si', 'No', 'N/A']
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: _isEditing
-                                ? (val) =>
-                                    setState(() => _madreSoltera = val!)
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _violenciaGenero,
-                            decoration: const InputDecoration(
-                              labelText: 'Violencia Género',
-                            ),
-                            items: ['Si', 'No', 'N/A']
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: _isEditing
-                                ? (val) =>
-                                    setState(() => _violenciaGenero = val!)
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    CustomDropdownWithOther(
-                      label: 'Nivel Educativo',
-                      icon: Icons.school,
-                      options: const [
-                        'Sin estudios',
-                        'Primaria',
-                        'Grado Medio',
-                        'Universidad',
-                      ],
-                      initialValue: _nivelEducativo,
-                      enabled: _isEditing,
-                      onChanged: (val) => _nivelEducativo = val,
-                    ),
-
-                    // 4. LEGAL / ACOGIDA
-                    const SectionHeader(
-                      title: '4. LEGAL / ACOGIDA',
-                      icon: Icons.gavel,
-                    ),
-                    SwitchListTile(
-                      title: const Text('¿Tiene Padrón?'),
-                      value: _tienePadron,
-                      activeColor: AppColors.primaryBlue,
-                      onChanged: _isEditing
-                          ? (val) {
-                              setState(() {
-                                _tienePadron = val;
-                                if (!val) _fechaPadronController.clear();
-                              });
-                            }
-                          : null,
-                    ),
-                    if (_tienePadron)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: TextFormField(
-                          controller: _fechaPadronController,
-                          readOnly: true,
-                          enabled: _isEditing,
-                          decoration: const InputDecoration(
-                            labelText: 'Fecha de Padrón',
-                            prefixIcon: Icon(Icons.date_range),
-                          ),
-                          onTap: () =>
-                              _selectDate(context, _fechaPadronController),
                         ),
                       ),
-
-                    CustomDropdownWithOther(
-                      label: 'Motivo Consulta',
-                      icon: Icons.question_answer,
-                      options: const [],
-                      initialValue: _motivoConsulta,
-                      enabled: _isEditing,
-                      onChanged: (val) => _motivoConsulta = val,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: CustomDropdownWithOther(
-                            label: 'Derivación',
-                            icon: Icons.alt_route,
-                            options: const [],
-                            initialValue: _derivacion,
-                            enabled: _isEditing,
-                            onChanged: (val) => _derivacion = val,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: CustomDropdownWithOther(
-                            label: 'Técnica Acogida',
-                            icon: Icons.psychology,
-                            options: const [],
-                            initialValue: _tecnicaAcogida,
-                            enabled: _isEditing,
-                            onChanged: (val) => _tecnicaAcogida = val,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // 5. CONTACTO DE EMERGENCIA
-                    const SectionHeader(
-                      title: '5. CONTACTO DE EMERGENCIA',
-                      icon: Icons.emergency,
-                    ),
-                    TextFormField(
-                      controller: _emergenciaNombre,
-                      enabled: _isEditing,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del Contacto',
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _emergenciaParentesco,
-                            enabled: _isEditing,
-                            decoration: const InputDecoration(
-                              labelText: 'Parentesco',
-                              prefixIcon: Icon(Icons.family_restroom),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _emergenciaTelefono,
-                            enabled: _isEditing,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Teléfono',
-                              prefixIcon: Icon(Icons.phone),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // 6 y 7
-                    BlocBuilder<RegistrationBloc, RegistrationState>(
-                      builder: (context, state) {
-                        return Column(
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SectionHeader(
-                              title: '6. ASOCIADO',
-                              icon: Icons.card_membership,
+                            Text(
+                              _nombreController.text.isNotEmpty ? _nombreController.text : 'Detalles de Miembro',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AppColors.primaryBlue,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
+                            Text(
+                              _correoController.text.isNotEmpty ? _correoController.text : 'Sin correo registrado',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
                               ),
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text(
-                                      'Registrar como Asociado',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    value: state.isAsociado,
-                                    onChanged: _isEditing
-                                        ? (val) => context
-                                            .read<RegistrationBloc>()
-                                            .add(ToggleAsociado(val ?? false))
-                                        : null,
-                                    activeColor: AppColors.primaryBlue,
-                                  ),
-                                  if (state.isAsociado) ...[
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: DropdownButtonFormField<String>(
-                                            value: _estadoMembresia,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Estado Membresía',
-                                            ),
-                                            items: ['Activo', 'Inactivo', 'Renovado']
-                                                .map(
-                                                  (e) => DropdownMenuItem(
-                                                    value: e,
-                                                    child: Text(e),
-                                                  ),
-                                                )
-                                                .toList(),
-                                            onChanged: _isEditing
-                                                ? (val) => setState(
-                                                    () => _estadoMembresia = val!,
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: DropdownButtonFormField<String>(
-                                            value: _estadoPago,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Estado Pago',
-                                            ),
-                                            items: ['Al día', 'Moroso']
-                                                .map(
-                                                  (e) => DropdownMenuItem(
-                                                    value: e,
-                                                    child: Text(e),
-                                                  ),
-                                                )
-                                                .toList(),
-                                            onChanged: _isEditing
-                                                ? (val) => setState(
-                                                    () => _estadoPago = val!,
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    DropdownButtonFormField<String>(
-                                      value: _metodoPago,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Método de Pago',
-                                      ),
-                                      items: ['Efectivo', 'Transferencia']
-                                          .map(
-                                            (e) => DropdownMenuItem(
-                                              value: e,
-                                              child: Text(e),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: _isEditing
-                                          ? (val) => _metodoPago = val!
-                                          : null,
-                                    ),
-                                    SwitchListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: const Text(
-                                        'Autoriza recibir WhatsApp',
-                                      ),
-                                      value: _autorizaWhatsapp,
-                                      activeColor: AppColors.primaryBlue,
-                                      onChanged: _isEditing
-                                          ? (val) => setState(
-                                                () => _autorizaWhatsapp = val,
-                                              )
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.folder_open, size: 18),
-                                        label: const Text('Generar Expediente'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF0D47A1),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          _showGenerarExpedienteDialog(context);
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            const SectionHeader(
-                              title: '7. VOLUNTARIO',
-                              icon: Icons.volunteer_activism,
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AppColors.primaryYellow,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text(
-                                      'Registrar como Voluntario',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    value: state.isVoluntario,
-                                    onChanged: _isEditing
-                                        ? (val) => context
-                                            .read<RegistrationBloc>()
-                                            .add(ToggleVoluntario(val ?? false))
-                                        : null,
-                                    activeColor: AppColors.primaryYellow,
-                                  ),
-                                  if (state.isVoluntario) ...[
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _volCargo,
-                                            enabled: _isEditing,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Cargo',
-                                              prefixIcon: Icon(
-                                                Icons.work_outline,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _volCampo,
-                                            enabled: _isEditing,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Campo de Acción',
-                                              prefixIcon: Icon(
-                                                Icons.category_outlined,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: TextFormField(
-                                            controller: _volTipo,
-                                            enabled: _isEditing,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Tipo (Opcional)',
-                                              prefixIcon: Icon(
-                                                Icons.label_outline,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _volHoras,
-                                            enabled: _isEditing,
-                                            keyboardType: TextInputType.number,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Horas / Semana',
-                                              prefixIcon: Icon(Icons.schedule),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _volUrlDoc,
-                                            enabled: _isEditing,
-                                            decoration: const InputDecoration(
-                                              labelText: 'URL Doc (Opcional)',
-                                              prefixIcon: Icon(Icons.link),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _volUrlCv,
-                                            enabled: _isEditing,
-                                            decoration: const InputDecoration(
-                                              labelText: 'URL CV (Opcional)',
-                                              prefixIcon: Icon(Icons.link),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    CheckboxListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: const Text(
-                                        'Carta Compromiso Firmada',
-                                      ),
-                                      value: _volCarta,
-                                      controlAffinity:
-                                          ListTileControlAffinity.leading,
-                                      onChanged: _isEditing
-                                          ? (val) => setState(() => _volCarta = val!)
-                                          : null,
-                                    ),
-                                    CheckboxListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: const Text(
-                                        'Formulario de Inscripción',
-                                      ),
-                                      value: _volFormulario,
-                                      controlAffinity:
-                                          ListTileControlAffinity.leading,
-                                      onChanged: _isEditing
-                                          ? (val) => setState(() => _volFormulario = val!)
-                                          : null,
-                                    ),
-                                  ],
-                                ],
-                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                        );
-                      },
-                    ),
-                    if (widget.memberId != null) ...[
-                      CommentsSectionWidget(idPersona: widget.memberId!),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isEditing ? Icons.edit_off : Icons.edit,
+                          color: Colors.white,
+                        ),
+                        tooltip: _isEditing ? 'Modo Lectura' : 'Modo Edición',
+                        onPressed: () {
+                          setState(() {
+                            _isEditing = !_isEditing;
+                          });
+                        },
+                      ),
+                    ] else ...[
+                      const Icon(Icons.person_add, color: Colors.white),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Nuevo Registro Principal',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ],
-                    const SizedBox(height: 100),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ),
 
-          // Bottom Actions
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: BlocBuilder<RegistrationBloc, RegistrationState>(
-              builder: (context, state) {
-                return Row(
-                  children: [
-                    if (widget.memberId != null) ...[
-                      IconButton(
-                        icon: const Icon(Icons.delete_forever, color: Colors.red),
-                        tooltip: 'Eliminar Miembro',
-                        onPressed: () => _confirmDelete(context),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancelar'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: (widget.memberId != null && !_isEditing)
-                            ? () => setState(() => _isEditing = true)
-                            : (state.status == RegistrationStatus.loading ? null : _submit),
-                        child: state.status == RegistrationStatus.loading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                widget.memberId != null
-                                    ? (_isEditing ? 'Guardar Cambios' : 'Editar Datos')
-                                    : 'Guardar Miembro',
+              // Formulario
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1. IDENTIFICACIÓN
+                        const SectionHeader(
+                          title: '1. IDENTIFICACIÓN',
+                          icon: Icons.badge,
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomDropdownWithOther(
+                                label: 'Tipo Doc',
+                                icon: Icons.badge_outlined,
+                                options: const ['NIF/NIE', 'Pasaporte'],
+                                initialValue: _tipoDoc,
+                                enabled: _isEditing,
+                                onChanged: (val) => _tipoDoc = val,
                               ),
-                      ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: _numIdentController,
+                                enabled: _isEditing,
+                                decoration: const InputDecoration(
+                                  labelText: 'Número Identificación *',
+                                  prefixIcon: Icon(Icons.tag),
+                                ),
+                                validator: (val) =>
+                                    val == null || val.isEmpty ? 'Requerido' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        CustomDropdownWithOther(
+                          label: 'Nacionalidad',
+                          icon: Icons.flag,
+                          options: const [
+                            'España',
+                            'Colombia',
+                            'Ecuador',
+                            'Perú',
+                            'Venezuela',
+                          ],
+                          initialValue: _nacionalidad,
+                          enabled: _isEditing,
+                          onChanged: (val) => _nacionalidad = val,
+                        ),
+
+                        // 2. DATOS PERSONALES
+                        const SectionHeader(
+                          title: '2. DATOS PERSONALES',
+                          icon: Icons.person,
+                        ),
+                        TextFormField(
+                          controller: _nombreController,
+                          enabled: _isEditing,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre Completo *',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (val) =>
+                              val == null || val.isEmpty ? 'Requerido' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _fechaNacController,
+                                readOnly: true,
+                                enabled: _isEditing,
+                                decoration: const InputDecoration(
+                                  labelText: 'Fecha Nacimiento (Opcional)',
+                                  prefixIcon: Icon(Icons.calendar_today),
+                                ),
+                                onTap: () =>
+                                    _selectDate(context, _fechaNacController),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _fechaAtencionController,
+                                readOnly: true,
+                                enabled: _isEditing,
+                                decoration: const InputDecoration(
+                                  labelText: 'Fecha de Atención (Opcional)',
+                                  prefixIcon: Icon(Icons.event_available),
+                                ),
+                                onTap: () =>
+                                    _selectDate(context, _fechaAtencionController),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _telefonoPrincipalController,
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  labelText: 'Teléfono Principal (Opcional)',
+                                  prefixIcon: Icon(Icons.phone),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _genero,
+                                decoration: const InputDecoration(
+                                  labelText: 'Género',
+                                  prefixIcon: Icon(Icons.wc),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'M', child: Text('M')),
+                                  DropdownMenuItem(value: 'H', child: Text('H')),
+                                  DropdownMenuItem(
+                                    value: 'LGTBI',
+                                    child: Text('LGTBI'),
+                                  ),
+                                ],
+                                onChanged: _isEditing
+                                    ? (val) => setState(() => _genero = val!)
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _correoController,
+                          enabled: _isEditing,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo Electrónico',
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                        ),
+
+                        // 3. SITUACIÓN SOCIAL
+                        const SectionHeader(
+                          title: '3. SITUACIÓN SOCIAL',
+                          icon: Icons.family_restroom,
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: CustomDropdownWithOther(
+                                label: 'Situación Administrativa',
+                                icon: Icons.gavel,
+                                options: const [
+                                  'Regular',
+                                  'Irregular',
+                                  'En tramite',
+                                ],
+                                initialValue: _sitAdmin,
+                                enabled: _isEditing,
+                                onChanged: (val) => _sitAdmin = val,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _unidadFamiliarController,
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Unidad Familiar',
+                                  prefixIcon: Icon(Icons.group),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _madreSoltera,
+                                decoration: const InputDecoration(
+                                  labelText: 'Madre Soltera',
+                                ),
+                                items: ['Si', 'No', 'N/A']
+                                    .map(
+                                      (e) => DropdownMenuItem(
+                                        value: e,
+                                        child: Text(e),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: _isEditing
+                                    ? (val) =>
+                                        setState(() => _madreSoltera = val!)
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _violenciaGenero,
+                                decoration: const InputDecoration(
+                                  labelText: 'Violencia Género',
+                                ),
+                                items: ['Si', 'No', 'N/A']
+                                    .map(
+                                      (e) => DropdownMenuItem(
+                                        value: e,
+                                        child: Text(e),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: _isEditing
+                                    ? (val) =>
+                                        setState(() => _violenciaGenero = val!)
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        CustomDropdownWithOther(
+                          label: 'Nivel Educativo',
+                          icon: Icons.school,
+                          options: const [
+                            'Sin estudios',
+                            'Primaria',
+                            'Grado Medio',
+                            'Universidad',
+                          ],
+                          initialValue: _nivelEducativo,
+                          enabled: _isEditing,
+                          onChanged: (val) => _nivelEducativo = val,
+                        ),
+
+                        // 4. LEGAL / ACOGIDA
+                        const SectionHeader(
+                          title: '4. LEGAL / ACOGIDA',
+                          icon: Icons.gavel,
+                        ),
+                        SwitchListTile(
+                          title: const Text('¿Tiene Padrón?'),
+                          value: _tienePadron,
+                          activeColor: AppColors.primaryBlue,
+                          onChanged: _isEditing
+                              ? (val) {
+                                  setState(() {
+                                    _tienePadron = val;
+                                    if (!val) _fechaPadronController.clear();
+                                  });
+                                }
+                              : null,
+                        ),
+                        if (_tienePadron)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: TextFormField(
+                              controller: _fechaPadronController,
+                              readOnly: true,
+                              enabled: _isEditing,
+                              decoration: const InputDecoration(
+                                labelText: 'Fecha de Padrón',
+                                prefixIcon: Icon(Icons.date_range),
+                              ),
+                              onTap: () =>
+                                  _selectDate(context, _fechaPadronController),
+                            ),
+                          ),
+
+                        CustomDropdownWithOther(
+                          label: 'Motivo Consulta',
+                          icon: Icons.question_answer,
+                          options: const [],
+                          initialValue: _motivoConsulta,
+                          enabled: _isEditing,
+                          onChanged: (val) => _motivoConsulta = val,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: CustomDropdownWithOther(
+                                label: 'Derivación',
+                                icon: Icons.alt_route,
+                                options: const [],
+                                initialValue: _derivacion,
+                                enabled: _isEditing,
+                                onChanged: (val) => _derivacion = val,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CustomDropdownWithOther(
+                                label: 'Técnica Acogida',
+                                icon: Icons.psychology,
+                                options: const [],
+                                initialValue: _tecnicaAcogida,
+                                enabled: _isEditing,
+                                onChanged: (val) => _tecnicaAcogida = val,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // 5. CONTACTO DE EMERGENCIA
+                        const SectionHeader(
+                          title: '5. CONTACTO DE EMERGENCIA',
+                          icon: Icons.emergency,
+                        ),
+                        TextFormField(
+                          controller: _emergenciaNombre,
+                          enabled: _isEditing,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre del Contacto',
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _emergenciaParentesco,
+                                enabled: _isEditing,
+                                decoration: const InputDecoration(
+                                  labelText: 'Parentesco',
+                                  prefixIcon: Icon(Icons.family_restroom),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _emergenciaTelefono,
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  labelText: 'Teléfono',
+                                  prefixIcon: Icon(Icons.phone),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // 6 y 7
+                        BlocBuilder<RegistrationBloc, RegistrationState>(
+                          builder: (context, state) {
+                            return Column(
+                              children: [
+                                const SectionHeader(
+                                  title: '6. ASOCIADO',
+                                  icon: Icons.card_membership,
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppColors.primaryBlue,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: [
+                                      CheckboxListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        title: const Text(
+                                          'Registrar como Asociado',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        value: state.isAsociado,
+                                        onChanged: _isEditing
+                                            ? (val) => context
+                                                .read<RegistrationBloc>()
+                                                .add(ToggleAsociado(val ?? false))
+                                            : null,
+                                        activeColor: AppColors.primaryBlue,
+                                      ),
+                                      if (state.isAsociado) ...[
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: DropdownButtonFormField<String>(
+                                                value: _estadoMembresia,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Estado Membresía',
+                                                ),
+                                                items: ['Activo', 'Inactivo', 'Renovado']
+                                                    .map(
+                                                      (e) => DropdownMenuItem(
+                                                        value: e,
+                                                        child: Text(e),
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                                onChanged: _isEditing
+                                                    ? (val) => setState(
+                                                        () => _estadoMembresia = val!,
+                                                      )
+                                                    : null,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: DropdownButtonFormField<String>(
+                                                value: _estadoPago,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Estado Pago',
+                                                ),
+                                                items: ['Al día', 'Moroso']
+                                                    .map(
+                                                      (e) => DropdownMenuItem(
+                                                        value: e,
+                                                        child: Text(e),
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                                onChanged: _isEditing
+                                                    ? (val) => setState(
+                                                        () => _estadoPago = val!,
+                                                      )
+                                                    : null,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        DropdownButtonFormField<String>(
+                                          value: _metodoPago,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Método de Pago',
+                                          ),
+                                          items: ['Efectivo', 'Transferencia']
+                                              .map(
+                                                (e) => DropdownMenuItem(
+                                                  value: e,
+                                                  child: Text(e),
+                                                ),
+                                              )
+                                              .toList(),
+                                          onChanged: _isEditing
+                                              ? (val) => _metodoPago = val!
+                                              : null,
+                                        ),
+                                        SwitchListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: const Text(
+                                            'Autoriza recibir WhatsApp',
+                                          ),
+                                          value: _autorizaWhatsapp,
+                                          activeColor: AppColors.primaryBlue,
+                                          onChanged: _isEditing
+                                              ? (val) => setState(
+                                                    () => _autorizaWhatsapp = val,
+                                                  )
+                                              : null,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(Icons.folder_open, size: 18),
+                                            label: const Text('Generar Expediente'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF0D47A1),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              _showGenerarExpedienteDialog(context);
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                const SectionHeader(
+                                  title: '7. VOLUNTARIO',
+                                  icon: Icons.volunteer_activism,
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppColors.primaryYellow,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: [
+                                      CheckboxListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        title: const Text(
+                                          'Registrar como Voluntario',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        value: state.isVoluntario,
+                                        onChanged: _isEditing
+                                            ? (val) => context
+                                                .read<RegistrationBloc>()
+                                                .add(ToggleVoluntario(val ?? false))
+                                            : null,
+                                        activeColor: AppColors.primaryYellow,
+                                      ),
+                                      if (state.isVoluntario) ...[
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _volCargo,
+                                                enabled: _isEditing,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Cargo',
+                                                  prefixIcon: Icon(
+                                                    Icons.work_outline,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _volCampo,
+                                                enabled: _isEditing,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Campo de Acción',
+                                                  prefixIcon: Icon(
+                                                    Icons.category_outlined,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 2,
+                                              child: TextFormField(
+                                                controller: _volTipo,
+                                                enabled: _isEditing,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Tipo (Opcional)',
+                                                  prefixIcon: Icon(
+                                                    Icons.label_outline,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _volHoras,
+                                                enabled: _isEditing,
+                                                keyboardType: TextInputType.number,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Horas / Semana',
+                                                  prefixIcon: Icon(Icons.schedule),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _volUrlDoc,
+                                                enabled: _isEditing,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'URL Doc (Opcional)',
+                                                  prefixIcon: Icon(Icons.link),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _volUrlCv,
+                                                enabled: _isEditing,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'URL CV (Opcional)',
+                                                  prefixIcon: Icon(Icons.link),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        CheckboxListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: const Text(
+                                            'Carta Compromiso Firmada',
+                                          ),
+                                          value: _volCarta,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                          onChanged: _isEditing
+                                              ? (val) => setState(() => _volCarta = val!)
+                                              : null,
+                                        ),
+                                        CheckboxListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: const Text(
+                                            'Formulario de Inscripción',
+                                          ),
+                                          value: _volFormulario,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                          onChanged: _isEditing
+                                              ? (val) => setState(() => _volFormulario = val!)
+                                              : null,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        if (widget.memberId != null) ...[
+                          CommentsSectionWidget(idPersona: widget.memberId!),
+                        ],
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom Actions
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, -2),
                     ),
                   ],
-                );
-              },
-            ),
+                ),
+                child: BlocBuilder<RegistrationBloc, RegistrationState>(
+                  builder: (context, state) {
+                    return Row(
+                      children: [
+                        if (widget.memberId != null) ...[
+                          IconButton(
+                            icon: const Icon(Icons.delete_forever, color: Colors.red),
+                            tooltip: 'Eliminar Miembro',
+                            onPressed: () => _confirmDelete(context),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: (widget.memberId != null && !_isEditing)
+                                ? () => setState(() => _isEditing = true)
+                                : (state.status == RegistrationStatus.loading ? null : _submit),
+                            child: state.status == RegistrationStatus.loading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    widget.memberId != null
+                                        ? (_isEditing ? 'Guardar Cambios' : 'Editar Datos')
+                                        : 'Guardar Miembro',
+                                  ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

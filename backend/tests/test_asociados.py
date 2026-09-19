@@ -73,3 +73,64 @@ def test_crud_asociados(client: TestClient, session: Session, usuario_prueba):
     # 7. DELETE /asociados/{id}
     res_del = client.delete(f"/asociados/{asociado_id}", headers=headers)
     assert res_del.status_code == 204
+
+
+def test_actualizar_persona_toggle_asociado(client: TestClient, session: Session, usuario_prueba):
+    auth_service = AuthService(AuthRepository(session))
+    token = auth_service.crear_token_acceso({"sub": str(usuario_prueba.id)})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Crear persona con es_asociado = True
+    req_create = {
+        "identificacion": {
+            "tipo_documento": "NIF/NIE",
+            "numero_identificacion": "TOGGLE999"
+        },
+        "datos_personales": {
+            "nombre_completo": "Toggle Associate User"
+        },
+        "es_asociado": True,
+        "datos_asociado": {
+            "metodo_pago": "Efectivo",
+            "estado_membresia": "Activo"
+        }
+    }
+    res_c = client.post("/personas/", json=req_create, headers=headers)
+    assert res_c.status_code == 201
+    p_id = res_c.json()["id"]
+    assert res_c.json()["es_asociado"] is True
+
+    # 2. Desmarcar asociado (es_asociado = False)
+    req_uncheck = {
+        "identificacion": {
+            "tipo_documento": "NIF/NIE",
+            "numero_identificacion": "TOGGLE999"
+        },
+        "datos_personales": {
+            "nombre_completo": "Toggle Associate User"
+        },
+        "es_asociado": False
+    }
+    res_u1 = client.patch(f"/personas/{p_id}", json=req_uncheck, headers=headers)
+    assert res_u1.status_code == 200
+    assert res_u1.json()["es_asociado"] is False
+
+    # 3. Volver a marcar como asociado (es_asociado = True)
+    req_recheck = {
+        "identificacion": {
+            "tipo_documento": "NIF/NIE",
+            "numero_identificacion": "TOGGLE999"
+        },
+        "datos_personales": {
+            "nombre_completo": "Toggle Associate User"
+        },
+        "es_asociado": True,
+        "datos_asociado": {
+            "metodo_pago": "Efectivo",
+            "estado_membresia": "Inactivo"  # simulate old state in form request
+        }
+    }
+    res_u2 = client.patch(f"/personas/{p_id}", json=req_recheck, headers=headers)
+    assert res_u2.status_code == 200
+    assert res_u2.json()["es_asociado"] is True
+

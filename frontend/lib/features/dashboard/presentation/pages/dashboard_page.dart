@@ -55,8 +55,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _getRoleTag(Map<String, dynamic> member) {
-    final bool esAsociado = member['es_asociado'] == true || member['datos_asociado'] != null;
-    final bool esVoluntario = member['es_voluntario'] == true || member['datos_voluntario'] != null;
+    final bool esAsociado = member['es_asociado'] == true;
+    final bool esVoluntario = member['es_voluntario'] == true;
 
     if (esAsociado && esVoluntario) return 'AMBOS';
     if (esAsociado) return 'ASOCIADO';

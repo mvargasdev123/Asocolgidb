@@ -275,11 +275,14 @@ class PersonaService:
             elif request.es_asociado == True:
                 if not persona.datos_asociado:
                     asoc_data = request.datos_asociado
+                    est_memb = "Activo"
+                    if asoc_data and asoc_data.estado_membresia and asoc_data.estado_membresia != "Inactivo":
+                        est_memb = asoc_data.estado_membresia
                     persona.datos_asociado = DatosAsociado(
                         id_persona=persona.id,
-                        metodo_pago=asoc_data.metodo_pago if asoc_data else 'Efectivo',
-                        estado_membresia='Activo',
-                        estado_pago=asoc_data.estado_pago if asoc_data else 'Al día',
+                        metodo_pago=asoc_data.metodo_pago if asoc_data and asoc_data.metodo_pago else 'Efectivo',
+                        estado_membresia=est_memb,
+                        estado_pago=asoc_data.estado_pago if asoc_data and asoc_data.estado_pago else 'Al día',
                         autoriza_whatsapp=asoc_data.autoriza_whatsapp if asoc_data else False,
                         fecha_vinculacion=asoc_data.fecha_vinculacion if asoc_data else None,
                     )
@@ -288,7 +291,8 @@ class PersonaService:
                     if request.datos_asociado:
                         ad = request.datos_asociado
                         if ad.metodo_pago: persona.datos_asociado.metodo_pago = ad.metodo_pago
-                        if ad.estado_membresia: persona.datos_asociado.estado_membresia = ad.estado_membresia
+                        if ad.estado_membresia and ad.estado_membresia != "Inactivo":
+                            persona.datos_asociado.estado_membresia = ad.estado_membresia
                         if ad.estado_pago: persona.datos_asociado.estado_pago = ad.estado_pago
                         if ad.autoriza_whatsapp is not None: persona.datos_asociado.autoriza_whatsapp = ad.autoriza_whatsapp
                         if ad.fecha_vinculacion is not None: persona.datos_asociado.fecha_vinculacion = ad.fecha_vinculacion
