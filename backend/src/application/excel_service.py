@@ -361,6 +361,10 @@ def ejecutar_importacion_definitiva(file_bytes: bytes, decisiones: Dict[str, str
         if not num_ident:
             continue
 
+        reg_aso_val = _clean_val(_get_bd_val(row, "REGISTRO ASOCIADO"))
+        reg_exp_val = _clean_val(_get_bd_val(row, "REGISTRO EXPEDIENTE"))
+        reg_vol_val = _clean_val(_get_bd_val(row, "REGISTRO VOLUNTARIO"))
+
         decision = decisiones.get(num_ident, "sobreescribir")
         if decision == "omitir":
             omitidos += 1
@@ -368,6 +372,14 @@ def ejecutar_importacion_definitiva(file_bytes: bytes, decisiones: Dict[str, str
             if p_ex:
                 identificacion_to_persona_id[num_ident] = p_ex.id
                 bd_index_to_persona_id[idx] = p_ex.id
+                if reg_aso_val and reg_aso_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+                    reg_aso_to_persona_id[reg_aso_val] = p_ex.id
+                    bd_aso_requested.add(p_ex.id)
+                if reg_exp_val and reg_exp_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+                    reg_exp_to_persona_id[reg_exp_val] = p_ex.id
+                if reg_vol_val and reg_vol_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+                    reg_vol_to_persona_id[reg_vol_val] = p_ex.id
+                    bd_vol_requested.add(p_ex.id)
             continue
 
         nombre = _get_bd_val(row, "NOMBRE COMPLETO") or f"Persona {num_ident}"
@@ -408,10 +420,6 @@ def ejecutar_importacion_definitiva(file_bytes: bytes, decisiones: Dict[str, str
         ce_nombre = _get_bd_val(row, "CONTACTO EMERGENCIA NOMBRE")
         ce_parent = _get_bd_val(row, "CONTACTO EMERGENCIA PARENTESCO")
         ce_tel = _get_bd_val(row, "CONTACTO EMERGENCIA TELEFONO")
-
-        reg_aso_val = _get_bd_val(row, "REGISTRO ASOCIADO")
-        reg_exp_val = _get_bd_val(row, "REGISTRO EXPEDIENTE")
-        reg_vol_val = _get_bd_val(row, "REGISTRO VOLUNTARIO")
 
         comentario_bd = _get_bd_val(row, "COMENTARIOS")
 
@@ -483,13 +491,13 @@ def ejecutar_importacion_definitiva(file_bytes: bytes, decisiones: Dict[str, str
         identificacion_to_persona_id[num_ident] = persona.id
         bd_index_to_persona_id[idx] = persona.id
 
-        if reg_aso_val and str(reg_aso_val).upper() not in ["N/A", "NONE", "NO", "FALSE"]:
-            reg_aso_to_persona_id[str(reg_aso_val).strip()] = persona.id
+        if reg_aso_val and reg_aso_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+            reg_aso_to_persona_id[reg_aso_val] = persona.id
             bd_aso_requested.add(persona.id)
-        if reg_exp_val and str(reg_exp_val).upper() not in ["N/A", "NONE", "NO", "FALSE"]:
-            reg_exp_to_persona_id[str(reg_exp_val).strip()] = persona.id
-        if reg_vol_val and str(reg_vol_val).upper() not in ["N/A", "NONE", "NO", "FALSE"]:
-            reg_vol_to_persona_id[str(reg_vol_val).strip()] = persona.id
+        if reg_exp_val and reg_exp_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+            reg_exp_to_persona_id[reg_exp_val] = persona.id
+        if reg_vol_val and reg_vol_val.upper() not in ["N/A", "NONE", "NO", "FALSE"]:
+            reg_vol_to_persona_id[reg_vol_val] = persona.id
             bd_vol_requested.add(persona.id)
 
         # Guardar comentario etiquetado como "Persona" / "BD"
