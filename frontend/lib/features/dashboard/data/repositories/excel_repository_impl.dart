@@ -80,7 +80,11 @@ class ExcelRepositoryImpl implements ExcelRepository {
 
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final msg = e.response?.data?['detail'] ?? 'Error al confirmar la importación.';
+      final data = e.response?.data;
+      String msg = 'Error al confirmar la importación.';
+      if (data is Map) {
+        msg = data['detail']?.toString() ?? data['message']?.toString() ?? msg;
+      }
       throw Exception(msg);
     }
   }

@@ -701,16 +701,22 @@ def ejecutar_importacion_definitiva(file_bytes: bytes, decisiones: Dict[str, str
                         persona_id = first_p.id
 
                 if persona_id and session.get(Persona, persona_id):
-                    reg_exp_str = str(reg_exp) if reg_exp else f"EXP-{exp_idx}"
+                    reg_exp_str = str(reg_exp) if reg_exp else f"EXP-{persona_id}-{exp_idx}"
                     exp_obj = session.exec(select(Expediente).where(Expediente.numero_registro == reg_exp_str)).first()
                     
-                    tipo_tr = _get_exp_val(row, "TIPO DE TRÁMITE") or _get_exp_val(row, "TIPO TRÁMITE") or "Trámite General"
+                    tipo_tr = (_get_exp_val(row, "TIPO DE TRÁMITE") or _get_exp_val(row, "TIPO TRÁMITE") or "Trámite General")[:140]
                     f_pres = _parse_date(_get_exp_val(row, "FECHA DE PRESENTACIÓN") or _get_exp_val(row, "PRESENTACIÓN")) or date.today()
-                    est_exp = _get_exp_val(row, "ESTADO DE EXPEDIENTE") or _get_exp_val(row, "ESTADO") or "Favorable"
-                    exp_asig = _get_exp_val(row, "NUMERO DE EXPEDIENTE") or _get_exp_val(row, "EXPEDIENTE ASIGNADO")
-                    rep_leg = _get_exp_val(row, "REPRESENTANTE LEGAL")
-                    cons_jur = _get_exp_val(row, "CONSULTORIO JURIDICO")
-                    ap_soc = _get_exp_val(row, "APORTE SOCIAL") or "Sí"
+                    est_exp = (_get_exp_val(row, "ESTADO DE EXPEDIENTE") or _get_exp_val(row, "ESTADO") or "Favorable")[:45]
+                    exp_asig = _clean_val(_get_exp_val(row, "NUMERO DE EXPEDIENTE") or _get_exp_val(row, "EXPEDIENTE ASIGNADO"))
+                    if exp_asig: exp_asig = exp_asig[:90]
+                    
+                    rep_leg = _clean_val(_get_exp_val(row, "REPRESENTANTE LEGAL"))
+                    if rep_leg: rep_leg = rep_leg[:140]
+                    
+                    cons_jur = _clean_val(_get_exp_val(row, "CONSULTORIO JURIDICO"))
+                    if cons_jur: cons_jur = cons_jur[:140]
+                    
+                    ap_soc = (_get_exp_val(row, "APORTE SOCIAL") or "Sí")[:10]
                     sol_ext_val = _get_exp_val(row, "SOLICITANTE DE TRAMITES EXTRANJERIA")
                     sol_ext = sol_ext_val in ["Sí", "SI", "Si", "True", "true", "1"] if sol_ext_val else False
                     ant_ap_val = _get_exp_val(row, "TIENE ANTECEDENTES TRADUCIDOS Y APOSTILLADOS")

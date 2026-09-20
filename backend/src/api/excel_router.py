@@ -110,6 +110,14 @@ async def confirmar_importacion_definitiva(
         decisiones = {}
 
     contents = await file.read()
-    resultado = ejecutar_importacion_definitiva(contents, decisiones, session)
-
-    return resultado
+    try:
+        resultado = ejecutar_importacion_definitiva(contents, decisiones, session)
+        return resultado
+    except Exception as e:
+        session.rollback()
+        import logging
+        logging.error(f"Error procesando la importación de Excel: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al procesar la importación: {str(e)}"
+        )
